@@ -1,0 +1,13 @@
+## AoForm Configuration
+## This file is used to configure the AoForm package
+## For more information, visit https://github.com/Autonomous-Finance/aoform
+
+- name: yield
+  file: build/yield.lua
+  scheduler: _GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA
+  module: JArYBF-D8q2OmZ4Mok00sD2Y_6SYEQ7Hjx-6VZ_jl3g
+  tags:
+    - name: App-Name
+      value: Yielder
+    - name: Name
+      value: Yield
