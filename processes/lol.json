@@ -1,0 +1,43 @@
+{
+  "PERMASWAP": {
+    "3TFMtVjYssqCuNPIqcIKn-tM4bWq5KtQ9NKweWxvV1w": {
+      "disableSwap": "false",
+      "tokenA": "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc",
+      "predictedPx": "0",
+      "disableLiquidity": "false",
+      "ticker": "YT2-YT1-30",
+      "tokenB": "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU",
+      "name": "YT2-YT1-30",
+      "symbolX": "YT2",
+      "from": "3TFMtVjYssqCuNPIqcIKn-tM4bWq5KtQ9NKweWxvV1w",
+      "timestamp": 1756101298964,
+      "poolFeeRatio": "0",
+      "fee": "30",
+      "denomination": "12",
+      "dexName": "PERMASWAP",
+      "predictedPy": "0",
+      "poolAddress": "3TFMtVjYssqCuNPIqcIKn-tM4bWq5KtQ9NKweWxvV1w",
+      "px": "130000000000000",
+      "totalSupply": "130000000000000",
+      "symbolY": "YT1",
+      "py": "150000000000000"
+    }
+  },
+  "BOTEGA": {
+    "Q9uyLNaNvuFHvNrQQZ_XuOrRZ6OEE0KqSEPJJj8Z4Ys": {
+      "tokenA": "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU",
+      "ticker": "Botega LP YT1/YT2",
+      "tokenB": "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc",
+      "name": "Botega LP YT1/YT2",
+      "timestamp": 1756101299775,
+      "reserveTokenB": "110000000000000",
+      "fee": "75.0",
+      "dexName": "BOTEGA",
+      "denomination": "12",
+      "poolAddress": "Q9uyLNaNvuFHvNrQQZ_XuOrRZ6OEE0KqSEPJJj8Z4Ys",
+      "reserveTokenA": "150000000000000",
+      "totalSupply": "128452325786651",
+      "from": "Q9uyLNaNvuFHvNrQQZ_XuOrRZ6OEE0KqSEPJJj8Z4Ys"
+    }
+  }
+}
