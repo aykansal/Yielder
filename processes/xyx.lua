@@ -413,6 +413,181 @@ function findAllTokenPairPools()
     return allPools
 end
 
+function findBestPool()
+    local allPools = {}
+    
+    -- Collect all pools into a single array
+    for dexName, pools in pairs(DATA_POOL) do
+        for poolAddress, poolData in pairs(pools) do
+            if poolData.tvl > 0 then -- Only consider pools with valid TVL
+                table.insert(allPools, poolData)
+            end
+        end
+    end
+    
+    if #allPools == 0 then return nil end
+    
+    -- Sort by APR (highest first)
+    table.sort(allPools, function(a, b) return a.apr > b.apr end)
+    
+    -- Apply selection logic based on APR and TVL
+    local bestPool = allPools[1] -- Start with highest APR
+    
+    -- If top pool has very low TVL (< $1000), consider the next best with higher TVL
+    if bestPool.tvl < 1000 and #allPools > 1 then
+        for i = 2, math.min(5, #allPools) do
+            local candidate = allPools[i]
+            -- Choose if APR is still competitive (within 20% of best) and TVL is significantly higher
+            if candidate.apr >= bestPool.apr * 0.8 and candidate.tvl > bestPool.tvl * 3 then
+                bestPool = candidate
+                break
+            end
+        end
+    end
+    
+    return bestPool
+end
+
+
+
+  function getTagValue(tagArray, tagName)
+        if not tagArray then return nil end
+        for _, tag in ipairs(tagArray) do
+            if tag.name == tagName then
+                return tag.value
+            end
+        end
+        return nil
+    end
+
+
+    function extractReserves(poolData, reservesTagArray)
+        local reserves = {}
+        
+        if poolData.dexName == "BOTEGA" then
+            if reservesTagArray then
+                for _, tag in ipairs(reservesTagArray) do
+                     if string.len(tag.name) >= 40 and tag.name ~= "Action" and tag.name ~= "Reference" and 
+                       tag.name ~= "X-Reference" and tag.name ~= "Data-Protocol" and tag.name ~= "Type" and 
+                       tag.name ~= "Variant" and tag.name ~= "From-Process" and tag.name ~= "From-Module" and 
+                       tag.name ~= "Pushed-For" then
+                        reserves[tag.name] = tonumber(tag.value) or 0
+                    end
+                end
+            end
+        elseif poolData.dexName == "PERMASWAP" then
+            if poolData.tokenA and poolData.px then
+                reserves[poolData.tokenA] = tonumber(poolData.px) or 0
+            end
+            if poolData.tokenB and poolData.py then
+                reserves[poolData.tokenB] = tonumber(poolData.py) or 0
+            end
+        end
+        
+        return reserves
+    end
+
+    function calculateTVL(reserves)
+        local totalTvl = 0
+        
+        for tokenAddress, reserveAmount in pairs(reserves) do
+            local tokenPrice = TOKEN_PRICES[tokenAddress] or 0
+            -- Convert from smallest units (divide by 10^12 for 12 decimals)
+            local humanReadableAmount = reserveAmount / (10^12)
+            totalTvl = totalTvl + (humanReadableAmount * tokenPrice)
+        end
+        
+        return totalTvl
+    end
+
+
+    -- function estimate24hVolume(poolAddress, currentReserves)
+    --     local poolHistory = HISTORICAL_RESERVES[poolAddress]
+    --     if not poolHistory or #poolHistory < 2 then
+    --         return 0
+    --     end
+        
+    --     local oldReserves = poolHistory[1].reserves
+    --     local totalVolumeUSD = 0
+        
+    --     for tokenAddress, currentAmount in pairs(currentReserves) do
+    --         if oldReserves[tokenAddress] then
+    --             local reserveChange = math.abs(currentAmount - oldReserves[tokenAddress])
+    --             reserveChange = reserveChange / (10^12)
+    --             local tokenPrice = TOKEN_PRICES[tokenAddress] or 0
+    --             totalVolumeUSD = totalVolumeUSD + (reserveChange * tokenPrice)
+    --         end
+    --     end
+        
+    --     return totalVolumeUSD
+    -- end
+
+    function estimate24hVolume(poolAddress, currentReserves, currentTimestamp)
+    local poolHistory = HISTORICAL_RESERVES[poolAddress]["history"]
+    
+    -- If there's no history, we can't calculate volume yet.
+    if not poolHistory or #poolHistory == 0 then
+        return 0
+    end
+
+    -- 1. Define the 24-hour lookback period
+    local twentyFourHoursInMillis = 24 * 3600 * 1000
+    local targetTimestamp = currentTimestamp - twentyFourHoursInMillis
+    
+    -- 2. Find the closest snapshot to 24 hours ago
+    local historicalSnapshot = nil
+    -- Iterate backwards from the most recent entry to find the first one older than our target
+    for i = #poolHistory, 1, -1 do
+        if poolHistory[i].timestamp <= targetTimestamp then
+            historicalSnapshot = poolHistory[i]
+            break
+        end
+    end
+    
+    -- If no snapshot is old enough (e.g., process just started), we can't calculate 24h volume
+    if not historicalSnapshot then
+        return 0
+    end
+
+    local oldReserves = historicalSnapshot.reserves
+    local totalValueChange = 0
+    
+    -- 3. Calculate the total value change across ALL tokens in the pool
+    for tokenAddress, currentAmount in pairs(currentReserves) do
+        if oldReserves[tokenAddress] then
+            local reserveChange = math.abs(currentAmount - oldReserves[tokenAddress])
+            local humanReadableChange = reserveChange / (10^12)
+            local tokenPrice = TOKEN_PRICES[tokenAddress] or 0
+            totalValueChange = totalValueChange + (humanReadableChange * tokenPrice)
+        end
+    end
+    
+    -- 4. **CRITICAL FIX**: Divide by two to avoid double-counting the volume
+    -- The value of tokens going in is the same as the value of tokens going out.
+    local estimatedVolume = totalValueChange / 2
+    
+    return estimatedVolume
+end
+
+
+
+
+    function calculateAPR(volume24h, fee, tvl)
+        if tvl <= 0 then return 0 end
+        
+        local feeRate = tonumber(fee) or 0
+        if feeRate > 1 then
+            feeRate = feeRate / 10000
+        else
+            feeRate = feeRate / 100
+        end
+        
+        local dailyFees = volume24h * feeRate
+        local apr = ((dailyFees * 365) / tvl) * 100
+        return apr
+    end
+
+
 -- function getTagValue(dexName, poolAddress, tagName)
 --     if DATA_POOL[dexName] and DATA_POOL[dexName][poolAddress] and DATA_POOL[dexName][poolAddress].TagArray then
 --         for _, tag in ipairs(DATA_POOL[dexName][poolAddress].TagArray) do
@@ -491,9 +666,9 @@ CRONDATAPOOL = {}
 
 USER_RUNNING_HANDLER = false
 
-YT1 = "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU"
-YT2 = "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc"
-YT3 = "CgD7STeX0_VDlNwNnB4_qQLg4nb4okqXQgTki0sFXSM"
+-- YT1 = "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU"
+-- YT2 = "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc"
+-- YT3 = "CgD7STeX0_VDlNwNnB4_qQLg4nb4okqXQgTki0sFXSM"
 
 YT1_PRICE = 0.0006561367 
 YT2_PRICE = 0.0004531765 
@@ -511,235 +686,89 @@ TOKEN_PRICES = {
 }
 
 Handlers.add("Best-Stake", "Best-Stake", function(msg)
-    local TokenX = msg.Tags.TokenX   -- address of the token X
-    local TokenY = msg.Tags.TokenY   -- address of the token Y
+  assert(type(msg.TokenX) == 'string', 'Error: "TokenX" tag is missing or not a string.')
+    assert(type(msg.TokenY) == 'string', 'Error: "TokenY" tag is missing or not a string.')
+
+    local TokenX = msg.TokenX
+    local TokenY = msg.TokenY
     
-    -- Update prices randomly (15% chance each)
-    if math.random(1,100) <= 15 then
-        YT1_PRICE = math.random() * (0.0009999999 - 0.0001000000) + 0.0001000000
-        TOKEN_PRICES["_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU"] = YT1_PRICE
-    end
-    if math.random(1,100) <= 15 then
-        YT2_PRICE = math.random() * (0.0009999999 - 0.0001000000) + 0.0001000000
-        TOKEN_PRICES["Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc"] = YT2_PRICE
-    end
-    if math.random(1,100) <= 15 then
-        YT3_PRICE = math.random() * (0.0009999999 - 0.0001000000) + 0.0001000000
-                TOKEN_PRICES["CgD7STeX0_VDlNwNnB4_qQLg4nb4okqXQgTki0sFXSM"] = YT3_PRICE
-        -- Add YT3 address to TOKEN_PRICES when available
-    end
+    -- Update prices randomly (this part is fine)
+    if math.random(1,100) <= 15 then YT1_PRICE = math.random() * 0.0008999999 + 0.0001; TOKEN_PRICES[YT1] = YT1_PRICE end
+    if math.random(1,100) <= 15 then YT2_PRICE = math.random() * 0.0008999999 + 0.0001; TOKEN_PRICES[YT2]= YT2_PRICE end
+    if math.random(1,100) <= 15 then YT3_PRICE = math.random() * 0.0008999999 + 0.0001; TOKEN_PRICES[YT3] = YT3_PRICE end
 
     DATA_POOL = {}
     local all_available_pools = findTokenPairPools(TokenX, TokenY)
-
-    local function getTagValue(tagArray, tagName)
-        if not tagArray then return nil end
-        for _, tag in ipairs(tagArray) do
-            if tag.name == tagName then
-                return tag.value
-            end
-        end
-        return nil
-    end
-
-    -- Helper function to extract all token reserves dynamically
-    local function extractReserves(poolData, reservesTagArray)
-        local reserves = {}
-        
-        if poolData.dexName == "BOTEGA" then
-            -- For BOTEGA, reserves are stored with token addresses as tag names
-            if reservesTagArray then
-                for _, tag in ipairs(reservesTagArray) do
-                    -- Check if tag name looks like a token address (43+ characters)
-                    if string.len(tag.name) >= 40 and tag.name ~= "Action" and tag.name ~= "Reference" and 
-                       tag.name ~= "X-Reference" and tag.name ~= "Data-Protocol" and tag.name ~= "Type" and 
-                       tag.name ~= "Variant" and tag.name ~= "From-Process" and tag.name ~= "From-Module" and 
-                       tag.name ~= "Pushed-For" then
-                        reserves[tag.name] = tonumber(tag.value) or 0
-                    end
-                end
-            end
-        elseif poolData.dexName == "PERMASWAP" then
-            -- For PERMASWAP, we use PX, PY, etc. and map them to token addresses
-            if poolData.tokenA and poolData.px then
-                reserves[poolData.tokenA] = tonumber(poolData.px) or 0
-            end
-            if poolData.tokenB and poolData.py then
-                reserves[poolData.tokenB] = tonumber(poolData.py) or 0
-            end
-            -- Handle additional tokens if they exist (PZ, PW, etc.)
-            local additionalTokens = {"PZ", "PW", "PV", "PU"}
-            local additionalTokenAddresses = {"tokenC", "tokenD", "tokenE", "tokenF"}
-            
-            for i, pReserve in ipairs(additionalTokens) do
-                local reserveValue = getTagValue(poolData.TagArray, pReserve)
-                local tokenAddress = getTagValue(poolData.TagArray, additionalTokenAddresses[i])
-                if reserveValue and tokenAddress then
-                    reserves[tokenAddress] = tonumber(reserveValue) or 0
-                end
-            end
-        end
-        
-        return reserves
-    end
-
-    -- Helper function to calculate TVL for any number of tokens
-    local function calculateTVL(reserves)
-        local totalTvl = 0
-        
-        for tokenAddress, reserveAmount in pairs(reserves) do
-            local tokenPrice = TOKEN_PRICES[tokenAddress] or 0
-            -- Convert from smallest units (divide by 10^12 for 12 decimals)
-            local humanReadableAmount = reserveAmount / (10^12)
-            totalTvl = totalTvl + (humanReadableAmount * tokenPrice)
-        end
-        
-        return totalTvl
-    end
-
-    -- Helper function to estimate 24h volume based on historical data (multi-token)
-    local function estimate24hVolume(poolAddress, currentReserves)
-        local poolHistory = HISTORICAL_RESERVES[poolAddress]
-        if not poolHistory or #poolHistory < 2 then
-            return 0 -- Not enough historical data
-        end
-        
-        local oldReserves = poolHistory[1].reserves
-        local totalVolumeUSD = 0
-        
-        -- Calculate volume for each token based on reserve changes
-        for tokenAddress, currentAmount in pairs(currentReserves) do
-            if oldReserves[tokenAddress] then
-                local reserveChange = math.abs(currentAmount - oldReserves[tokenAddress])
-                -- Convert to human-readable units and multiply by token price
-                reserveChange = reserveChange / (10^12)
-                local tokenPrice = TOKEN_PRICES[tokenAddress] or 0
-                totalVolumeUSD = totalVolumeUSD + (reserveChange * tokenPrice)
-            end
-        end
-        
-        return totalVolumeUSD
-    end
-
-    -- Helper function to calculate APR
-    local function calculateAPR(volume24h, fee, tvl)
-        if tvl <= 0 then return 0 end
-        
-        local feeRate = tonumber(fee) or 0
-        -- Convert fee from basis points if needed (e.g., 75.0 = 0.75%)
-        if feeRate > 1 then
-            feeRate = feeRate / 10000  -- Convert basis points to decimal
-        else
-            feeRate = feeRate / 100    -- Convert percentage to decimal
-        end
-        
-        local dailyFees = volume24h * feeRate
-        local apr = ((dailyFees * 365) / tvl) * 100
-        
-        return apr
-    end
-
     local current_timestamp = msg.Timestamp
 
     for dexName, poolAddresses in pairs(all_available_pools) do
-        print(dexName .. ":")
-        
-        if not DATA_POOL[dexName] then
-            DATA_POOL[dexName] = {}
-        end
+        if not DATA_POOL[dexName] then DATA_POOL[dexName] = {} end
         
         for _, address in ipairs(poolAddresses) do
-            print("  " .. address)
+            print("Processing pool: " .. address)
             
-            local poolResponse = Send({
-                Target = tostring(address),
-                Action = "Info",
-            }).receive()
-
+            -- Fetching data remains the same...
+            local poolResponse = Send({ Target = tostring(address), Action = "Info" }).receive()
             local reservesResponse = nil
             if dexName == "BOTEGA" then
-                reservesResponse = Send({
-                    Target = tostring(address),
-                    Action = "Get-Reserves",
-                }).receive()
+                reservesResponse = Send({ Target = tostring(address), Action = "Get-Reserves" }).receive()
             end
             
             if poolResponse and poolResponse.TagArray then
                 local poolData = {
-                    -- Basic pool info
+                    -- All your poolData fields are correct...
                     name = getTagValue(poolResponse.TagArray, "Name"),
-                    ticker = getTagValue(poolResponse.TagArray, "Ticker"),
                     fee = getTagValue(poolResponse.TagArray, "Fee") or getTagValue(poolResponse.TagArray, "FeeBps"),
-                    totalSupply = getTagValue(poolResponse.TagArray, "TotalSupply"),
-                    
-                    -- Token info (dynamic - can be more than 2 tokens)
                     tokenA = getTagValue(poolResponse.TagArray, "TokenA") or getTagValue(poolResponse.TagArray, "X"),
                     tokenB = getTagValue(poolResponse.TagArray, "TokenB") or getTagValue(poolResponse.TagArray, "Y"),
-                    tokenC = getTagValue(poolResponse.TagArray, "TokenC") or getTagValue(poolResponse.TagArray, "Z"),
-                    symbolX = getTagValue(poolResponse.TagArray, "SymbolX"),
-                    symbolY = getTagValue(poolResponse.TagArray, "SymbolY"),
-                    symbolZ = getTagValue(poolResponse.TagArray, "SymbolZ"),
-                    
-                    -- Pool state for Permaswap (can have more than PX, PY)
                     px = getTagValue(poolResponse.TagArray, "PX"),
                     py = getTagValue(poolResponse.TagArray, "PY"),
-                    pz = getTagValue(poolResponse.TagArray, "PZ"),
-                    predictedPx = getTagValue(poolResponse.TagArray, "PredictedPx"),
-                    predictedPy = getTagValue(poolResponse.TagArray, "PredictedPy"),
-                    predictedPz = getTagValue(poolResponse.TagArray, "PredictedPz"),
-                    
-                    -- Pool settings
-                    denomination = getTagValue(poolResponse.TagArray, "Denomination"),
-                    poolFeeRatio = getTagValue(poolResponse.TagArray, "PoolFeeRatio"),
-                    disableSwap = getTagValue(poolResponse.TagArray, "DisableSwap"),
-                    disableLiquidity = getTagValue(poolResponse.TagArray, "DisableLiquidity"),
-                    
-                    -- Metadata
                     dexName = dexName,
-                    poolAddress = address,
-                    timestamp = poolResponse.Timestamp,
-                    from = poolResponse.From,
-                    TagArray = poolResponse.TagArray
+                    poolAddress = address
                 }
 
-                -- Extract all reserves dynamically
                 local currentReserves = extractReserves(poolData, reservesResponse and reservesResponse.TagArray)
                 poolData.reserves = currentReserves
-
-                -- Calculate TVL using all tokens
                 poolData.tvl = calculateTVL(currentReserves)
 
-                -- Store historical data for volume estimation
+                -- **FIX #1**: Check for history and seed it if it's the first run.
                 if not HISTORICAL_RESERVES[address] then
+                    print("  - First time seeing pool. Seeding history for next run...")
                     HISTORICAL_RESERVES[address] = {}
+                    -- Add the current data as the FIRST historical point.
+                    table.insert(HISTORICAL_RESERVES[address], {
+                        reserves = currentReserves,
+                        timestamp = current_timestamp
+                    })
                 end
                 
-                -- Estimate 24h volume using all tokens
-                poolData.volume24h = estimate24hVolume(address, currentReserves)
-                
-                -- Calculate APR
+                -- **FIX #2**: The volume and APR will be 0 on the first run, which is CORRECT.
+                -- On the second run, it will have a history to compare against.
+                poolData.volume24h = estimate24hVolume(address, currentReserves, current_timestamp)
                 poolData.apr = calculateAPR(poolData.volume24h, poolData.fee, poolData.tvl)
 
-                -- Store current reserves as historical data
-                table.insert(HISTORICAL_RESERVES[address], 1, {
-                    reserves = currentReserves,
-                    timestamp = current_timestamp
-                })
+                -- **FIX #3**: Store the new data point AFTER calculations. REMOVED the duplicate insert from here.
+                -- Your existing storage logic at the end of the handler is correct.
                 
-                -- Keep only last 30 entries (for memory management)
-                if #HISTORICAL_RESERVES[address] > 30 then
-                    table.remove(HISTORICAL_RESERVES[address])
-                end
-
                 DATA_POOL[dexName][address] = poolData
-                
-                -- Print token count and details
-                local tokenCount = 0
-                for _ in pairs(currentReserves) do tokenCount = tokenCount + 1 end
-                
-                print("    Stored pool data for: " .. address .. " | Tokens: " .. tokenCount .. " | TVL: $" .. string.format("%.2f", poolData.tvl) .. " | APR: " .. string.format("%.2f", poolData.apr) .. "%")
+                print("    Stored pool data for: " .. address .. " | TVL: $" .. string.format("%.2f", poolData.tvl) .. " | APR: " .. string.format("%.2f", poolData.apr) .. "%")
             else
                 print("    No TagArray found for pool: " .. address)
+            end
+        end
+    end
+
+    -- **This part of your code was MISSING but is crucial for storing the history for the NEXT run.**
+    for dexName, pools in pairs(DATA_POOL) do
+        for address, poolData in pairs(pools) do
+            if poolData.reserves then
+                table.insert(HISTORICAL_RESERVES[address], {
+                    reserves = poolData.reserves,
+                    timestamp = current_timestamp
+                })
+                if #HISTORICAL_RESERVES[address] > 30 then
+                    table.remove(HISTORICAL_RESERVES[address], 1)
+                end
             end
         end
     end
@@ -747,8 +776,6 @@ Handlers.add("Best-Stake", "Best-Stake", function(msg)
     local bestPool = findBestPool()
     msg.reply({Data=require("json").encode(bestPool)})
 end)
-
-
 
 
 
@@ -775,93 +802,12 @@ Handlers.add("cron", "cron", function(msg)
     CRONDATAPOOL = {}
     local all_available_pools = findAllTokenPairPools()
 
-    local function getTagValue(tagArray, tagName)
-        if not tagArray then return nil end
-        for _, tag in ipairs(tagArray) do
-            if tag.name == tagName then
-                return tag.value
-            end
-        end
-        return nil
-    end
+ 
 
-    -- Helper function to extract reserves dynamically
-    local function extractReserves(poolData, reservesTagArray)
-        local reserves = {}
-        
-        if poolData.dexName == "BOTEGA" then
-            if reservesTagArray then
-                for _, tag in ipairs(reservesTagArray) do
-                    if string.len(tag.name) >= 40 and 
-                       tag.name ~= "Action" and tag.name ~= "Reference" and 
-                       tag.name ~= "X-Reference" and tag.name ~= "Data-Protocol" and 
-                       tag.name ~= "Type" and tag.name ~= "Variant" and 
-                       tag.name ~= "From-Process" and tag.name ~= "From-Module" and 
-                       tag.name ~= "Pushed-For" then
-                        reserves[tag.name] = tonumber(tag.value) or 0
-                    end
-                end
-            end
-        elseif poolData.dexName == "PERMASWAP" then
-            if poolData.tokenA and poolData.px then
-                reserves[poolData.tokenA] = tonumber(poolData.px) or 0
-            end
-            if poolData.tokenB and poolData.py then
-                reserves[poolData.tokenB] = tonumber(poolData.py) or 0
-            end
-        end
-        
-        return reserves
-    end
+    
 
-    -- Helper function to calculate TVL
-    local function calculateTVL(reserves)
-        local totalTvl = 0
-        for tokenAddress, reserveAmount in pairs(reserves) do
-            local tokenPrice = TOKEN_PRICES[tokenAddress] or 0
-            local humanReadableAmount = reserveAmount / (10^12)
-            totalTvl = totalTvl + (humanReadableAmount * tokenPrice)
-        end
-        return totalTvl
-    end
+    
 
-    -- Helper function to estimate volume
-    local function estimate24hVolume(poolAddress, currentReserves)
-        local poolHistory = HISTORICAL_RESERVES[poolAddress]
-        if not poolHistory or #poolHistory < 2 then
-            return 0
-        end
-        
-        local oldReserves = poolHistory[1].reserves
-        local totalVolumeUSD = 0
-        
-        for tokenAddress, currentAmount in pairs(currentReserves) do
-            if oldReserves[tokenAddress] then
-                local reserveChange = math.abs(currentAmount - oldReserves[tokenAddress])
-                reserveChange = reserveChange / (10^12)
-                local tokenPrice = TOKEN_PRICES[tokenAddress] or 0
-                totalVolumeUSD = totalVolumeUSD + (reserveChange * tokenPrice)
-            end
-        end
-        
-        return totalVolumeUSD
-    end
-
-    -- Helper function to calculate APR
-    local function calculateAPR(volume24h, fee, tvl)
-        if tvl <= 0 then return 0 end
-        
-        local feeRate = tonumber(fee) or 0
-        if feeRate > 1 then
-            feeRate = feeRate / 10000
-        else
-            feeRate = feeRate / 100
-        end
-        
-        local dailyFees = volume24h * feeRate
-        local apr = ((dailyFees * 365) / tvl) * 100
-        return apr
-    end
 
     local current_timestamp = msg.Timestamp
 
@@ -932,42 +878,57 @@ Handlers.add("cron", "cron", function(msg)
                 -- Store historical data
                 if not HISTORICAL_RESERVES[address] then
                     HISTORICAL_RESERVES[address] = {}
+                    table.insert(HISTORICAL_RESERVES[address]["history"], {
+                        reserves = currentReserves,
+                        timestamp = current_timestamp
+                    })
+                    HISTORICAL_RESERVES[address]["latest_reserve"] = {
+                           reserves = currentReserves,
+                        timestamp = current_timestamp,
+                        }
                 end
                 
+
+                 HISTORICAL_RESERVES[address]["latest_reserve"] = {
+                           reserves = currentReserves,
+                        timestamp = current_timestamp,
+                        }
+
+
                 poolData.volume24h = estimate24hVolume(address, currentReserves)
                 poolData.apr = calculateAPR(poolData.volume24h, poolData.fee, poolData.tvl)
 
-                -- Store current reserves as historical data
-                table.insert(HISTORICAL_RESERVES[address], 1, {
-                    reserves = currentReserves,
-                    timestamp = current_timestamp
-                })
-                
-                -- Keep only last 30 entries
-                if #HISTORICAL_RESERVES[address] > 30 then
-                    table.remove(HISTORICAL_RESERVES[address])
-                end
+--                 -- Store current reserves as historical data
+--               table.insert(HISTORICAL_RESERVES[address], {
+--     reserves = currentReserves,
+--     timestamp = current_timestamp 
+-- })
+
+-- -- Keep only last 30 entries (remove oldest from beginning)
+-- if #HISTORICAL_RESERVES[address] > 30 then
+--     table.remove(HISTORICAL_RESERVES[address], 1)  -- Remove oldest entry
+-- end
 
                 CRONDATAPOOL[dexName][address] = poolData
                 
                 -- Print in the exact format you requested
-                local reserveStr = ""
-                for tokenAddr, amount in pairs(currentReserves) do
-                    reserveStr = reserveStr .. tokenAddr .. " " .. amount .. ", "
-                end
+                -- local reserveStr = ""
+                -- for tokenAddr, amount in pairs(currentReserves) do
+                --     reserveStr = reserveStr .. tokenAddr .. " " .. amount .. ", "
+                -- end
                 
-                print(dexName .. " " .. address .. " disableSwap " .. (poolData.disableSwap or "false") .. 
-                      ", tvl " .. poolData.tvl .. ", tokenA " .. (poolData.tokenA or "") .. 
-                      ", predictedPx " .. (poolData.predictedPx or "0") .. ", disableLiquidity " .. (poolData.disableLiquidity or "false") .. 
-                      ", volume24h " .. poolData.volume24h .. ", apr " .. poolData.apr ..
-                      ", ticker " .. (poolData.ticker or "") .. ", tokenB " .. (poolData.tokenB or "") ..
-                      ", reserves " .. reserveStr .. ", name " .. (poolData.name or "") ..
-                      ", symbolX " .. (poolData.symbolX or "") .. ", from " .. (poolData.from or "") ..
-                      ", timestamp " .. (poolData.timestamp or "") .. ", fee " .. (poolData.fee or "") ..
-                      ", poolFeeRatio " .. (poolData.poolFeeRatio or "") .. ", predictedPy " .. (poolData.predictedPy or "0") ..
-                      ", denomination " .. (poolData.denomination or "") .. ", dexName " .. poolData.dexName ..
-                      ", symbolY " .. (poolData.symbolY or "") .. ", poolAddress " .. poolData.poolAddress ..
-                      ", px " .. (poolData.px or "") .. ", totalSupply " .. (poolData.totalSupply or ""))
+                -- print(dexName .. " " .. address .. " disableSwap " .. (poolData.disableSwap or "false") .. 
+                --       ", tvl " .. poolData.tvl .. ", tokenA " .. (poolData.tokenA or "") .. 
+                --       ", predictedPx " .. (poolData.predictedPx or "0") .. ", disableLiquidity " .. (poolData.disableLiquidity or "false") .. 
+                --       ", volume24h " .. poolData.volume24h .. ", apr " .. poolData.apr ..
+                --       ", ticker " .. (poolData.ticker or "") .. ", tokenB " .. (poolData.tokenB or "") ..
+                --       ", reserves " .. reserveStr .. ", name " .. (poolData.name or "") ..
+                --       ", symbolX " .. (poolData.symbolX or "") .. ", from " .. (poolData.from or "") ..
+                --       ", timestamp " .. (poolData.timestamp or "") .. ", fee " .. (poolData.fee or "") ..
+                --       ", poolFeeRatio " .. (poolData.poolFeeRatio or "") .. ", predictedPy " .. (poolData.predictedPy or "0") ..
+                --       ", denomination " .. (poolData.denomination or "") .. ", dexName " .. poolData.dexName ..
+                --       ", symbolY " .. (poolData.symbolY or "") .. ", poolAddress " .. poolData.poolAddress ..
+                --       ", px " .. (poolData.px or "") .. ", totalSupply " .. (poolData.totalSupply or ""))
                 
             else
                 print("    No TagArray found for pool: " .. address)
@@ -978,47 +939,3 @@ Handlers.add("cron", "cron", function(msg)
     print("CRON data collection completed for all token pairs")
 end)
 
--- Helper function to get CRON data
-function getCronPoolData(dexName, poolAddress)
-    if CRONDATAPOOL[dexName] and CRONDATAPOOL[dexName][poolAddress] then
-        return CRONDATAPOOL[dexName][poolAddress]
-    end
-    return nil
-end
-
--- Helper function to get all CRON data
-function getAllCronData()
-    return CRONDATAPOOL
-end
-
--- Manual trigger for testing
-Handlers.add("trigger-cron", "trigger-cron", function(msg)
-    -- Simulate cron execution
-    local cronMsg = {
-        Timestamp = os.time() * 1000,  -- Convert to milliseconds
-        From = msg.From
-    }
-    
-    -- Call the cron handler
-    local cronHandler = Handlers.handlers["cron"]
-    if cronHandler then
-        cronHandler.handle(cronMsg)
-        msg.reply({
-            Data = "CRON executed successfully",
-            PoolCount = tostring(#CRONDATAPOOL)
-        })
-    end
-end)
-
--- aPbLwv3daFtcPEgkH0lqgmcJQudaogBjHOOSTxNoyJY
-
-Handlers.add("pop", "pop", function(msg)
-    CALLER_NAME=msg.From
-    -- print("chala")
-    -- print(require('json').encode(msg))
-    -- PRICE_FEED22 = require('json').decode(msg.data)
-    -- print("PRICE FEED FROM HYPER AOS")
-    -- print(PRICE_FEED22)
-    Send({Target="epciyWx-RAd3ZgxoV4iBr8EAJMFLSzisLZcHcSNhJ5U",Action="pop" })
-    
-end)
