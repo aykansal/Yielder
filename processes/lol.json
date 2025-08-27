@@ -793,6 +793,82 @@
         "name": "BOTEGA"
       }
     }
+  },
+  "HISTORY_RESERVES": {
+    "3TFMtVjYssqCuNPIqcIKn-tM4bWq5KtQ9NKweWxvV1w": [
+      {
+        "timestamp": 1756240512410,
+        "reserves": {
+          "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU": 3.1153846153846e14,
+          "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc": 2.7e14
+        }
+      },
+      {
+        "timestamp": 1756240512410,
+        "reserves": {
+          "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU": 3.1153846153846e14,
+          "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc": 2.7e14
+        }
+      },
+      {
+        "timestamp": 1756240514220,
+        "reserves": {
+          "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU": 3.1153846153846e14,
+          "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc": 2.7e14
+        }
+      },
+      {
+        "timestamp": 1756240512977,
+        "reserves": {
+          "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU": 3.1153846153846e14,
+          "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc": 2.7e14
+        }
+      },
+      {
+        "timestamp": 1756243168836,
+        "reserves": {
+          "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU": 3.1153846153846e14,
+          "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc": 2.7e14
+        }
+      }
+    ],
+    "Q9uyLNaNvuFHvNrQQZ_XuOrRZ6OEE0KqSEPJJj8Z4Ys": [
+      {
+        "timestamp": 1756240512410,
+        "reserves": {
+          "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU": 1.5e14,
+          "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc": 1.1e14
+        }
+      },
+      {
+        "timestamp": 1756240512410,
+        "reserves": {
+          "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU": 1.5e14,
+          "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc": 1.1e14
+        }
+      },
+      {
+        "timestamp": 1756240514220,
+        "reserves": {
+          "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU": 1.5e14,
+          "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc": 1.1e14
+        }
+      },
+      {
+        "timestamp": 1756240512977,
+        "reserves": {
+          "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU": 1.5e14,
+          "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc": 1.1e14
+        }
+      },
+      {
+        "timestamp": 1756243168836,
+        "reserves": {
+          "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU": 1.5e14,
+          "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc": 1.1e14
+        }
+      }
+    ]
   }
 }
 

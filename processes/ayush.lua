@@ -298,7 +298,9 @@ Handlers.add('burn', Handlers.utils.hasMatchingTag("Action",'Burn'), function(ms
 end)
 
 
--------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+
+HISTORICAL_RESERVES = HISTORICAL_RESERVES or {}
 
 YT1 = "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU"
 YT2 = "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc"
@@ -501,28 +503,8 @@ end
     end
 
 
-    -- function estimate24hVolume(poolAddress, currentReserves)
-    --     local poolHistory = HISTORICAL_RESERVES[poolAddress]
-    --     if not poolHistory or #poolHistory < 2 then
-    --         return 0
-    --     end
-        
-    --     local oldReserves = poolHistory[1].reserves
-    --     local totalVolumeUSD = 0
-        
-    --     for tokenAddress, currentAmount in pairs(currentReserves) do
-    --         if oldReserves[tokenAddress] then
-    --             local reserveChange = math.abs(currentAmount - oldReserves[tokenAddress])
-    --             reserveChange = reserveChange / (10^12)
-    --             local tokenPrice = TOKEN_PRICES[tokenAddress] or 0
-    --             totalVolumeUSD = totalVolumeUSD + (reserveChange * tokenPrice)
-    --         end
-    --     end
-        
-    --     return totalVolumeUSD
-    -- end
-
-   function timestamp_to_datetime(timestamp_ms)
+  
+function timestamp_to_datetime(timestamp_ms)
     local timestamp_s = timestamp_ms / 1000 -- Convert from milliseconds
     -- The rest of your function is correct...
     local seconds_in_day = 86400
@@ -557,43 +539,44 @@ end
 -- The NEW self-managing estimate24hVolume function
 -- =========================================================================
 function estimate24hVolume(poolAddress, currentReserves, currentTimestamp)
-    -- Step 1: Initialize the structure if this is the first time seeing the pool
-    if not HISTORICAL_RESERVES[address] then
-        print("  - First time seeing pool. Initializing history structure for " .. address)
-        HISTORICAL_RESERVES[address] = {
+    
+    -- Step 1: Initialize the entire structure if this is the first time seeing the pool
+    if not HISTORICAL_RESERVES[poolAddress] then
+        print("  - First time seeing pool. Initializing history structure for " .. poolAddress)
+        HISTORICAL_RESERVES[poolAddress] = {
             history = {},
             latest_reserve = {}
         }
     end
 
-    local poolHistory = HISTORICAL_RESERVES[address].history
-    local latestSnapshot = HISTORICAL_RESERVES[address].latest_reserve
+    -- Get a direct reference to this pool's historical data
+    local poolDataHistory = HISTORICAL_RESERVES[poolAddress]
+    local latestSnapshot = poolDataHistory.latest_reserve
 
-    -- Step 2: Handle End-of-Day Snapshot Logic
+    -- Step 2: Handle the End-of-Day Snapshot Logic
     if latestSnapshot.timestamp then
         local current_datetime = timestamp_to_datetime(currentTimestamp)
         local latest_datetime = timestamp_to_datetime(latestSnapshot.timestamp)
         
         -- If the current day is newer than the latest snapshot's day, archive it
         if current_datetime.year_month_day > latest_datetime.year_month_day then
-            print("  - New day detected. Archiving yesterday's final reserve data.")
-            table.insert(poolHistory, latestSnapshot)
+            print("  - New day detected. Archiving yesterday's final reserve data for " .. poolAddress)
+            table.insert(poolDataHistory.history, latestSnapshot)
             
-            -- Keep the history pruned to 15 entries
-            if #poolHistory > 15 then
-                table.remove(poolHistory, 1) -- Remove the oldest entry
+            -- Keep the history pruned to a maximum of 15 entries
+            if #poolDataHistory.history > 15 then
+                table.remove(poolDataHistory.history, 1) -- Remove the oldest entry
             end
         end
     end
     
     -- Step 3: Find Yesterday's Data for Calculation
-    local today = timestamp_to_datetime(currentTimestamp)
     local yesterday_timestamp = currentTimestamp - (24 * 3600 * 1000)
     local yesterday = timestamp_to_datetime(yesterday_timestamp)
     
     local historicalSnapshot = nil
-    for i = #poolHistory, 1, -1 do
-        local snapshot = poolHistory[i]
+    for i = #poolDataHistory.history, 1, -1 do
+        local snapshot = poolDataHistory.history[i]
         local snapshot_datetime = timestamp_to_datetime(snapshot.timestamp)
         if snapshot_datetime.year_month_day == yesterday.year_month_day then
             historicalSnapshot = snapshot
@@ -604,6 +587,7 @@ function estimate24hVolume(poolAddress, currentReserves, currentTimestamp)
     -- Step 4: Calculate Volume
     local estimatedVolume = 0
     if historicalSnapshot then
+        -- (Calculation logic is correct and remains the same)
         local oldReserves = historicalSnapshot.reserves
         local totalValueChange = 0
         for tokenAddress, currentAmount in pairs(currentReserves) do
@@ -617,16 +601,14 @@ function estimate24hVolume(poolAddress, currentReserves, currentTimestamp)
         estimatedVolume = totalValueChange / 2
     end
     
-    -- Step 5: **ALWAYS** update the latest_reserve with the current data
-    HISTORICAL_RESERVES[address].latest_reserve = {
+    -- Step 5: **ALWAYS** update the 'latest_reserve' with the current data for the next run
+    poolDataHistory.latest_reserve = {
         reserves = currentReserves,
         timestamp = currentTimestamp
     }
     
     return estimatedVolume
 end
-
-
 
     function calculateAPR(volume24h, fee, tvl)
         if tvl <= 0 then return 0 end
@@ -666,146 +648,13 @@ function getBestPoolRiskLevel(poolData)
     end
 end
 
--- Helper function to get detailed pool information
--- function getPoolDetails(dexName, poolAddress)
---     local pool = DATA_POOL[dexName] and DATA_POOL[dexName][poolAddress]
---     if not pool then return nil end
-    
---     local tokenDetails = {}
---     for tokenAddress, reserveAmount in pairs(pool.reserves) do
---         local humanReadableAmount = reserveAmount / (10^12)
---         local tokenPrice = TOKEN_PRICES[tokenAddress] or 0
---         local tokenValue = humanReadableAmount * tokenPrice
-        
---         table.insert(tokenDetails, {
---             address = tokenAddress,
---             reserve = humanReadableAmount,
---             price = tokenPrice,
---             value = tokenValue
---         })
---     end
-    
---     return {
---         name = pool.name,
---         tvl = pool.tvl,
---         apr = pool.apr,
---         volume24h = pool.volume24h,
---         fee = pool.fee,
---         tokenCount = #tokenDetails,
---         tokens = tokenDetails,
---         riskLevel = getBestPoolRiskLevel(pool)
---     }
--- end
 
--- function timestamp_to_datetime(timestamp)
---     local seconds_in_minute = 60
---     local seconds_in_hour = 3600
---     local seconds_in_day = 86400
-
---     -- Days in months for non-leap year
---     local month_days = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
-
---     -- Leap year check
---     local function is_leap_year(year)
---         return (year % 4 == 0 and year % 100 ~= 0) or (year % 400 == 0)
---     end
-
---     -- Calculate total days since epoch and remaining seconds
---     local total_days = math.floor(timestamp / seconds_in_day)
---     local remaining_seconds = timestamp % seconds_in_day
-
---     -- Calculate year
---     local year = 1970
---     local days = total_days
-
---     while true do
---         local days_in_year = is_leap_year(year) and 366 or 365
---         if days >= days_in_year then
---             days = days - days_in_year
---             year = year + 1
---         else
---             break
---         end
---     end
-
---     -- Calculate month
---     local month = 1
---     for i = 1, 12 do
---         local days_in_month = month_days[i]
---         if i == 2 and is_leap_year(year) then
---             days_in_month = 29
---         end
-        
---         if days >= days_in_month then
---             days = days - days_in_month
---             month = month + 1
---         else
---             break
---         end
---     end
-
---     local day = days + 1
---     local hour = math.floor(remaining_seconds / seconds_in_hour)
---     remaining_seconds = remaining_seconds % seconds_in_hour
---     local minute = math.floor(remaining_seconds / seconds_in_minute)
---     local second = remaining_seconds % seconds_in_minute
-
---     -- Return structured table for easy calculations
---     return {
---         -- Basic components (integers for arithmetic)
---         year = year,
---         month = month,
---         day = day,
---         hour = hour,
---         minute = minute,
---         second = second,
-        
---         -- Additional useful values for calculations
---         timestamp = timestamp,
---         total_days_since_epoch = total_days,
---         day_of_year = total_days - math.floor((year - 1970) * 365.25) + 1,
-        
---         -- Derived values for comparisons
---         year_month = year * 100 + month,           -- 202508 for easy month comparison
---         year_month_day = year * 10000 + month * 100 + day, -- 20250827 for date comparison
---         time_minutes = hour * 60 + minute,         -- Total minutes since midnight
---         time_seconds = hour * 3600 + minute * 60 + second, -- Total seconds since midnight
-        
---         -- Week day (0 = Thursday, 1 = Friday, ... 6 = Wednesday, since epoch was Thursday)
---         weekday = (total_days + 4) % 7,
-        
---         -- Quarter
---         quarter = math.ceil(month / 3),
-        
---         -- Is leap year flag
---         is_leap_year = is_leap_year(year)
---     }
--- end
-
--------------------------------------------------------------------------------------------------------------------------------
-
-Handlers.add("YT1Airdrop", "YT1Airdrop", function(msg)
-    -- Quantity: send any number (no need for denomination) e.g. 2.0, 23, 26.98
-    Send({Target="_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU", Action="Airdrop", Quantity = msg.Quantity, Recipient = msg.From})
-end)
-
-Handlers.add("YT2Airdrop", "YT2Airdrop", function(msg)
-    -- Quantity: send any number (no need for denomination) e.g. 2.0, 23, 26.98
-    Send({Target="Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc", Action="Airdrop", Quantity = msg.Quantity, Recipient = msg.From})
-end)
-
-Handlers.add("YT3Airdrop", "YT3Airdrop", function(msg)
-    -- Quantity: send any number (no need for denomination) e.g. 2.0, 23, 26.98
-    Send({Target="CgD7STeX0_VDlNwNnB4_qQLg4nb4okqXQgTki0sFXSM", Action="Airdrop", Quantity = msg.Quantity, Recipient = msg.From})
-end)
-
--------------------------------------------------------------------------------------------------------------------------------
--- ao.send({Target="CgD7STeX0_VDlNwNnB4_qQLg4nb4okqXQgTki0sFXSM", Action="Transfer", Quantity = "500000000000000", Recipient = "yWEDs-sho-5Ka7ql_Ov71GNFdHqLspekxfhAo1bcqtU" })
+-------------------------------------------------------------------------------------------------------------
 
 DATA_POOL = {}
 CRONDATAPOOL = {}
-
 USER_RUNNING_HANDLER = false
+Send({Target = "aPbLwv3daFtcPEgkH0lqgmcJQudaogBjHOOSTxNoyJY",Action = "Best-Stake",TokenX = "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU",TokenY = "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc"})
 
 -- YT1 = "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU"
 -- YT2 = "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc"
@@ -816,22 +665,18 @@ YT2_PRICE = 0.0004531765
 YT3_PRICE = 0.0002525369 
 
 -- Store historical reserve data for any number of tokens
-HISTORICAL_RESERVES = HISTORICAL_RESERVES or {}
 
 -- Token address to price mapping
 TOKEN_PRICES = {
-    [YT1] = YT1_PRICE,  -- YT1
-    [YT2] = YT2_PRICE,  -- YT2
-    [YT3] = YT3_PRICE
+	[YT1] = YT1_PRICE,  -- YT1
+	[YT2] = YT2_PRICE,  -- YT2
+	[YT3] = YT3_PRICE
     -- Add more token addresses as needed
 }
 
 Handlers.add("Best-Stake", "Best-Stake", function(msg)
-  assert(type(msg.TokenX) == 'string', 'Error: "TokenX" tag is missing or not a string.')
-    assert(type(msg.TokenY) == 'string', 'Error: "TokenY" tag is missing or not a string.')
-
-    local TokenX = msg.TokenX
-    local TokenY = msg.TokenY
+    local TokenX = msg.Tags.TokenX
+    local TokenY = msg.Tags.TokenY
     
     -- Update prices randomly (this part is fine)
     if math.random(1,100) <= 15 then YT1_PRICE = math.random() * 0.0008999999 + 0.0001; TOKEN_PRICES[YT1] = YT1_PRICE end
@@ -847,9 +692,13 @@ Handlers.add("Best-Stake", "Best-Stake", function(msg)
         
         for _, address in ipairs(poolAddresses) do
             print("Processing pool: " .. address)
-            
+            print("sending message to address for INFO")
             -- Fetching data remains the same...
-            local poolResponse = Send({ Target = tostring(address), Action = "Info" }).receive()
+            local poolResponse =  Send({
+                Target = tostring(address),
+                Action = "Info",
+            }).receive()
+            print("Got some answer")
             local reservesResponse = nil
             if dexName == "BOTEGA" then
                 reservesResponse = Send({ Target = tostring(address), Action = "Get-Reserves" }).receive()
@@ -872,20 +721,11 @@ Handlers.add("Best-Stake", "Best-Stake", function(msg)
                 poolData.reserves = currentReserves
                 poolData.tvl = calculateTVL(currentReserves)
 
-                -- **FIX #1**: Check for history and seed it if it's the first run.
-                if not HISTORICAL_RESERVES[address] then
-                    print("  - First time seeing pool. Seeding history for next run...")
-                    HISTORICAL_RESERVES[address] = {}
-                    -- Add the current data as the FIRST historical point.
-                    table.insert(HISTORICAL_RESERVES[address], {
-                        reserves = currentReserves,
-                        timestamp = current_timestamp
-                    })
-                end
-                
+              print("tvl calculated")
                 -- **FIX #2**: The volume and APR will be 0 on the first run, which is CORRECT.
                 -- On the second run, it will have a history to compare against.
                 poolData.volume24h = estimate24hVolume(address, currentReserves, current_timestamp)
+                print("volume calculated")
                 poolData.apr = calculateAPR(poolData.volume24h, poolData.fee, poolData.tvl)
 
                 -- **FIX #3**: Store the new data point AFTER calculations. REMOVED the duplicate insert from here.
@@ -900,29 +740,25 @@ Handlers.add("Best-Stake", "Best-Stake", function(msg)
     end
 
     -- **This part of your code was MISSING but is crucial for storing the history for the NEXT run.**
-    for dexName, pools in pairs(DATA_POOL) do
-        for address, poolData in pairs(pools) do
-            if poolData.reserves then
-                table.insert(HISTORICAL_RESERVES[address], {
-                    reserves = poolData.reserves,
-                    timestamp = current_timestamp
-                })
-                if #HISTORICAL_RESERVES[address] > 30 then
-                    table.remove(HISTORICAL_RESERVES[address], 1)
-                end
-            end
-        end
-    end
+    -- for dexName, pools in pairs(DATA_POOL) do
+    --     for address, poolData in pairs(pools) do
+    --         if poolData.reserves then
+    --             table.insert(HISTORICAL_RESERVES[address], {
+    --                 reserves = poolData.reserves,
+    --                 timestamp = current_timestamp
+    --             })
+    --             if #HISTORICAL_RESERVES[address] > 30 then
+    --                 table.remove(HISTORICAL_RESERVES[address], 1)
+    --             end
+    --         end
+    --     end
+    -- end
 
     local bestPool = findBestPool()
     msg.reply({Data=require("json").encode(bestPool)})
 end)
 
-
-
-
-
-
+-------------------------------------------------------------------------------------------------------------
 
 -- CRON Handler - Collects data for all pools periodically
 Handlers.add("cron", "cron", function(msg)
@@ -1016,37 +852,11 @@ Handlers.add("cron", "cron", function(msg)
                 -- Calculate metrics
                 poolData.tvl = calculateTVL(currentReserves)
                 
-                -- Store historical data
-                if not HISTORICAL_RESERVES[address] then
-                    HISTORICAL_RESERVES[address] = {}
-                    table.insert(HISTORICAL_RESERVES[address]["history"], {
-                        reserves = currentReserves,
-                        timestamp = current_timestamp
-                    })
-                    HISTORICAL_RESERVES[address]["latest_reserve"] = {
-                           reserves = currentReserves,
-                        timestamp = current_timestamp,
-                        }
-                end
-                
+            
+                 poolData.volume24h = estimate24hVolume(address, currentReserves, current_timestamp)
+            poolData.apr = calculateAPR(poolData.volume24h, poolData.fee, poolData.tvl)
 
-
-
-                poolData.volume24h = estimate24hVolume(address, currentReserves)
-                poolData.apr = calculateAPR(poolData.volume24h, poolData.fee, poolData.tvl)
-
---                 -- Store current reserves as historical data
---               table.insert(HISTORICAL_RESERVES[address], {
---     reserves = currentReserves,
---     timestamp = current_timestamp 
--- })
-
--- -- Keep only last 30 entries (remove oldest from beginning)
--- if #HISTORICAL_RESERVES[address] > 30 then
---     table.remove(HISTORICAL_RESERVES[address], 1)  -- Remove oldest entry
--- end
-
-
+         
 
                 CRONDATAPOOL[dexName][address] = poolData
                 
@@ -1077,6 +887,3 @@ Handlers.add("cron", "cron", function(msg)
     
     print("CRON data collection completed for all token pairs")
 end)
-
--- aPbLwv3daFtcPEgkH0lqgmcJQudaogBjHOOSTxNoyJY
-
