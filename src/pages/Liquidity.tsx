@@ -1,7 +1,7 @@
-import { AppShell } from "@/components/layout/AppShell";
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams, NavLink } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { motion } from "framer-motion";
+import { withWalletAuth } from "@/components/auth/ProtectedRoute";
 import {
   Select,
   SelectContent,
@@ -20,37 +20,36 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Link2, RefreshCw } from "lucide-react";
 import { formatPercent, formatTokenAmount } from "@/lib/format";
 
-function Tabs({ processId }: { processId: string }) {
-  const base = `/liquidity`;
-  const tabs = [
-    { to: `${base}/add/${processId}`, label: "Add" },
-    { to: `${base}/remove/${processId}`, label: "Remove" },
-    { to: `${base}/claim/${processId}`, label: "Claim" },
-  ];
+function LiquidityTabs({ processId }: { processId: string }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Determine active tab based on current route
+  const activeTab = useMemo(() => {
+    if (location.pathname.includes('/add/')) return 'add';
+    if (location.pathname.includes('/remove/')) return 'remove';
+    if (location.pathname.includes('/claim/')) return 'claim';
+    return 'add';
+  }, [location.pathname]);
+
+  const handleTabChange = (value: string) => {
+    navigate(`/liquidity/${value}/${processId}`);
+  };
+
   return (
-    <div className="mt-4 flex gap-4">
-      {tabs.map((t) => (
-        <NavLink
-          key={t.to}
-          to={t.to}
-          className={({ isActive }) =>
-            `pb-1 text-sm font-medium ${isActive ? "text-foreground" : "text-muted-foreground"}`
-          }
-        >
-          {({ isActive }) => (
-            <span className="inline-flex flex-col items-center">
-              <span>{t.label}</span>
-              <span
-                className={`mt-1 h-0.5 w-8 rounded-full transition-all ${isActive ? "bg-[hsl(var(--primary-700))]" : "bg-transparent"}`}
-              />
-            </span>
-          )}
-        </NavLink>
-      ))}
+    <div className="mt-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="add">Add</TabsTrigger>
+          <TabsTrigger value="remove">Remove</TabsTrigger>
+          <TabsTrigger value="claim">Claim</TabsTrigger>
+        </TabsList>
+      </Tabs>
     </div>
   );
 }
@@ -73,7 +72,7 @@ function sanitizeNumericInput(v: string) {
   return v.replace(/[^0-9.]/g, "").replace(/(\.)(?=.*\1)/g, "");
 }
 
-export function LiquidityAdd() {
+function LiquidityAddComponent() {
   const { processId = "" } = useParams();
 
   const [tokenA, setTokenA] = useState(TOKENS[0]);
@@ -118,7 +117,7 @@ export function LiquidityAdd() {
   };
 
   return (
-    <AppShell>
+    <div>
       <h1 className="text-2xl font-semibold">Liquidity</h1>
       <div className="mt-4 rounded-[16px] border bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
         <div className="flex items-center justify-between gap-4">
@@ -141,7 +140,7 @@ export function LiquidityAdd() {
           </div>
         </div>
       </div>
-      <Tabs processId={processId} />
+      <LiquidityTabs processId={processId} />
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -419,11 +418,11 @@ export function LiquidityAdd() {
           </div>
         </div>
       </motion.div>
-    </AppShell>
+    </div>
   );
 }
 
-export function LiquidityRemove() {
+function LiquidityRemoveComponent() {
   const { processId = "" } = useParams();
   const [percent, setPercent] = useState<number[]>([20]);
   const pooled = { wAR: 0.00000162, ARIO: 0.01738629 };
@@ -434,9 +433,9 @@ export function LiquidityRemove() {
   const [openConfirm, setOpenConfirm] = useState(false);
 
   return (
-    <AppShell>
+    <div>
       <h1 className="text-2xl font-semibold">Liquidity</h1>
-      <Tabs processId={processId} />
+      <LiquidityTabs processId={processId} />
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -542,20 +541,20 @@ export function LiquidityRemove() {
           </div>
         </div>
       </motion.div>
-    </AppShell>
+    </div>
   );
 }
 
-export function LiquidityClaim() {
+function LiquidityClaimComponent() {
   const { processId = "" } = useParams();
   const rewards = [
     { symbol: "ARIO", amount: 12.3456, usd: 8.91 },
     { symbol: "wAR", amount: 0.000045, usd: 0.01 },
   ];
   return (
-    <AppShell>
+    <div>
       <h1 className="text-2xl font-semibold">Liquidity</h1>
-      <Tabs processId={processId} />
+      <LiquidityTabs processId={processId} />
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -592,7 +591,7 @@ export function LiquidityClaim() {
           </div>
         </div>
       </motion.div>
-    </AppShell>
+    </div>
   );
 }
 
@@ -610,10 +609,15 @@ export function LiquidityRedirect() {
     }
   }, [loc.search, nav]);
   return (
-    <AppShell>
+    <div>
       <div className="rounded-[16px] border bg-secondary p-8 text-center text-muted-foreground">
         Redirecting…
       </div>
-    </AppShell>
+    </div>
   );
 }
+
+// Protected exports
+export const LiquidityAdd = withWalletAuth(LiquidityAddComponent);
+export const LiquidityRemove = withWalletAuth(LiquidityRemoveComponent);
+export const LiquidityClaim = withWalletAuth(LiquidityClaimComponent);

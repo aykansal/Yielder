@@ -1,7 +1,14 @@
 import { useMemo, useState } from "react";
-import { AppShell } from "@/components/layout/AppShell";
 import { DEXBadge } from "@/components/atoms/DEXBadge";
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { useAuth } from "@/hooks/use-global-state";
 
 export type Pool = {
   processId: string;
@@ -67,7 +76,7 @@ const samplePools: Pool[] = [
 
 const handlePoolsRefresh = async () => {
   const res = await readHandler({
-    action: "Pool-Yield-Details",
+    action: "cron",
     process: "gXMkW8bXLoVJXwu8sGjTkcJ4sTIUh9ag9C66AgaYjOk",
   });
   console.log(res);
@@ -79,6 +88,7 @@ export default function Pools() {
   const [sort, setSort] = useState<"APR" | "TVL" | "Fees">("APR");
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const filtered = useMemo(() => {
     let list = [...samplePools];
@@ -101,7 +111,7 @@ export default function Pools() {
   }, [q, dex, sort]);
 
   return (
-    <AppShell>
+    <div>
       <div className="mb-6 flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Pools</h1>
@@ -152,111 +162,124 @@ export default function Pools() {
         </div>
       </div>
 
-      <div className="grid gap-3">
+      <div className="rounded-[16px] border bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
         {loading ? (
-          Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-[16px] bg-card border p-4 shadow-sm"
-            >
-              <Skeleton className="h-6 w-40" />
-              <div className="mt-4 grid grid-cols-4 gap-4">
-                <Skeleton className="h-4" />
-                <Skeleton className="h-4" />
-                <Skeleton className="h-4" />
-                <Skeleton className="h-10" />
+          <div className="space-y-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center space-x-4">
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-8 w-16" />
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-[16px] border bg-secondary p-8 text-center text-muted-foreground">
+          <div className="p-12 text-center text-muted-foreground">
             No pools found. Adjust filters.
           </div>
         ) : (
-          filtered.map((p) => (
-            <div
-              key={p.processId}
-              className="group flex items-center justify-between rounded-[16px] border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-accent"
-            >
-              <div className="flex items-center gap-4">
-                <DEXBadge name={p.dex} />
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => nav(`/liquidity/add/${p.processId}`)}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && nav(`/liquidity/add/${p.processId}`)
-                  }
-                  className="flex cursor-pointer items-center gap-3"
-                >
-                  <div className="text-sm font-semibold text-foreground">
-                    {p.tokenA.symbol} / {p.tokenB.symbol}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid flex-1 grid-cols-4 items-center text-center text-sm text-foreground/80">
-                <div>
-                  <div className="font-medium">Swap Fees</div>
-                  <div className="text-muted-foreground">
-                    {(p.swapFeePct * 100).toFixed(2)}%
-                  </div>
-                </div>
-                <div>
-                  <div className="font-medium">TVL</div>
-                  <div className="text-muted-foreground">
-                    {formatUSD(p.tvlUsd)}
-                  </div>
-                </div>
-                <div>
-                  <div className="font-medium">APR</div>
-                  <div className="text-muted-foreground">
-                    {formatPercent(p.aprPct)}
-                  </div>
-                </div>
-                <div>
-                  <div className="font-medium">Pool Balance</div>
-                  <div className="text-muted-foreground">—</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => nav(`/liquidity/add/${p.processId}`)}
-                  aria-label="Open Add"
-                >
-                  Add
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    className="opacity-0 transition-opacity group-hover:opacity-100"
-                    aria-label="More"
-                  >
-                    <MoreHorizontal className="h-5 w-5" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => nav(`/liquidity/add/${p.processId}`)}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>DEX</TableHead>
+                <TableHead>Pool</TableHead>
+                <TableHead>Swap Fees</TableHead>
+                <TableHead>TVL</TableHead>
+                <TableHead>APR</TableHead>
+                <TableHead>Pool Balance</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((p) => (
+                <TableRow key={p.processId} className="hover:bg-secondary/60">
+                  <TableCell>
+                    <DEXBadge name={p.dex} />
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      className={`text-left font-semibold ${isAuthenticated ? 'hover:underline cursor-pointer' : 'cursor-default'}`}
+                      onClick={() => isAuthenticated && nav(`/liquidity/add/${p.processId}`)}
                     >
-                      Open Add
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => nav(`/liquidity/remove/${p.processId}`)}
-                    >
-                      Open Remove
-                    </DropdownMenuItem>
-                    {/* <DropdownMenuItem
-                      onClick={() => nav(`/liquidity/claim/${p.processId}`)}
-                    >
-                      Open Claim
-                    </DropdownMenuItem> */}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          ))
+                      {p.tokenA.symbol} / {p.tokenB.symbol}
+                    </button>
+                    <div className="text-xs text-muted-foreground">
+                      {p.contract.slice(0, 6)}…{p.contract.slice(-4)}
+                    </div>
+                    {!isAuthenticated && (
+                      <div className="text-xs text-muted-foreground">
+                        (Connect wallet to interact)
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                      {(p.swapFeePct * 100).toFixed(2)}%
+                    </span>
+                  </TableCell>
+                  <TableCell>{formatUSD(p.tvlUsd)}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                      {formatPercent(p.aprPct)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">—</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <ProtectedRoute 
+                        showCard={false}
+                        fallback={
+                          <Button variant="outline" size="sm" disabled>
+                            Connect Wallet
+                          </Button>
+                        }
+                      >
+                        <Button
+                          size="sm"
+                          onClick={() => nav(`/liquidity/add/${p.processId}`)}
+                        >
+                          Add
+                        </Button>
+                      </ProtectedRoute>
+                      
+                      {isAuthenticated && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => nav(`/liquidity/add/${p.processId}`)}
+                            >
+                              Add Liquidity
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => nav(`/liquidity/remove/${p.processId}`)}
+                            >
+                              Remove Liquidity
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => nav(`/liquidity/claim/${p.processId}`)}
+                            >
+                              Claim Rewards
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </div>
-    </AppShell>
+    </div>
   );
 }

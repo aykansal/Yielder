@@ -18,7 +18,7 @@ import {
   AOModule,
   AOScheduler,
   CommonTags,
-} from "@/lib/arkit.constants";
+} from "@/lib/constants/arkit.constants";
 
 export interface DispatchResult {
   id: string;
@@ -54,8 +54,7 @@ interface MessageResponse {
   id: string;
   recipient: string;
   tags: { name: string; value: string }[];
-  // @ts-expect-error ignore
-  data;
+  data
   owner: string;
 }
 
