@@ -1,3 +1,4 @@
+import { HOST_NAME, PORT_NUM, PROTOCOL_TYPE } from '@/lib/constants/arkit.constants';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -12,7 +13,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isConnecting: boolean;
   wallet: WalletInfo | null;
-  
+
   // Actions
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
@@ -31,7 +32,7 @@ export const useAuthStore = create<AuthState>()(
       // Connect wallet action
       connectWallet: async () => {
         set({ isConnecting: true });
-        
+
         try {
           // Check if browser extension exists
           if (!window.arweaveWallet) {
@@ -39,8 +40,20 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Request connection
-          await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'ACCESS_PUBLIC_KEY', 'SIGN_TRANSACTION']);
-          
+          await window.arweaveWallet.connect(["ENCRYPT", "DECRYPT", "DISPATCH", "SIGNATURE", "ACCESS_ADDRESS", "SIGN_TRANSACTION", "ACCESS_PUBLIC_KEY", "ACCESS_ALL_ADDRESSES", "ACCESS_ARWEAVE_CONFIG",
+            // @ts-expect-error ignore
+            "ACCESS_TOKENS",
+          ],
+            {
+              name: "Yielder-Dev",
+              logo: "https://arweave.net/pYIMnXpJRFUwTzogx_z5HCOPRRjCbSPYIlUqOjJ9Srs",
+            },
+            {
+              host: HOST_NAME,
+              port: PORT_NUM,
+              protocol: PROTOCOL_TYPE,
+            }
+          );
           // Get wallet info
           const address = await window.arweaveWallet.getActiveAddress();
           const publicKey = await window.arweaveWallet.getActivePublicKey();
@@ -74,7 +87,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Disconnect error:', error);
         }
-        
+
         set({
           isAuthenticated: false,
           isConnecting: false,
@@ -112,18 +125,3 @@ export const useWalletActions = () => {
   const { connectWallet, disconnectWallet, setWalletInfo, setConnecting } = useAuthStore();
   return { connectWallet, disconnectWallet, setWalletInfo, setConnecting };
 };
-
-// Type declarations for ArConnect
-declare global {
-  interface Window {
-    arweaveWallet: {
-      connect: (permissions: string[]) => Promise<void>;
-      disconnect: () => Promise<void>;
-      getActiveAddress: () => Promise<string>;
-      getActivePublicKey: () => Promise<string>;
-      getAllAddresses: () => Promise<string[]>;
-      getWalletNames: () => Promise<{ [addr: string]: string }>;
-      sign: (transaction: any, options?: any) => Promise<any>;
-    };
-  }
-}

@@ -474,7 +474,7 @@ export async function connectWallet(): Promise<WalletConnectionResponse> {
         "DECRYPT",
         "DISPATCH",
         "SIGNATURE",
-        // @ts-expect-error ignore
+        // @ts-expect-error
         "ACCESS_TOKENS",
         "ACCESS_ADDRESS",
         "SIGN_TRANSACTION",
@@ -483,7 +483,7 @@ export async function connectWallet(): Promise<WalletConnectionResponse> {
         "ACCESS_ARWEAVE_CONFIG",
       ],
       {
-        name: "socials-test",
+        name: "Yield-Dev",
         logo: "https://arweave.net/pYIMnXpJRFUwTzogx_z5HCOPRRjCbSPYIlUqOjJ9Srs",
       },
       {

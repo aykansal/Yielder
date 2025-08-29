@@ -80,6 +80,30 @@ layer(base);
     max-width: 1400px;
   }
 }
+ 
+@layer utilities {
+  /* Width of the scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  /* Track (background) */
+  ::-webkit-scrollbar-track {
+    background: theme(--color-background); 
+  }
+
+  /* Scroll thumb (the handle) */
+  ::-webkit-scrollbar-thumb {
+    background: theme(--color-primary); 
+    border-radius: 9999px; 
+  }
+
+  /* Thumb on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background: theme(--color-border); 
+  }
+}
+
 
 /* Compatibility styles for Tailwind v4 (border default changed to `currentcolor`) */
 @layer base {

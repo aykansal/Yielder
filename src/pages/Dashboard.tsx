@@ -1,4 +1,3 @@
-import { AppShell } from "@/components/layout/AppShell";
 import {
   Table,
   TableBody,
@@ -16,12 +15,12 @@ const positions = [
   {
     processId: "gjnaCsEd749Z11",
     dex: "Permaswap" as const,
-    pair: "wAR / ARIO",
-    address: "0xabc12345def67890abcd",
+    pair: "YT3 / YT1",
+    address: "bmR1GHhqKJa9MrQe9g8gC8OrNcitWyFRuVKADIKNXc8",
     pooledA: 0.00000162,
     pooledB: 0.01738629,
-    myUsd: 1234.56,
-    aprPct: 0.089,
+    myUsd: 124.56,
+    aprPct: 0.000,
   },
 ];
 
