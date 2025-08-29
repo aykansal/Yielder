@@ -1,17 +1,17 @@
 import { useEffect, useMemo } from "react";
-import { useLocation, useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { withWalletAuth } from "@/components/auth/ProtectedRoute";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { 
-  LiquidityAddComponent, 
-  LiquidityRemoveComponent, 
-  LiquidityClaimComponent 
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  LiquidityAddComponent,
+  LiquidityRemoveComponent,
+  LiquidityClaimComponent,
 } from "@/components/liquidity";
 
 function LiquidityTabs({ processId }: { processId: string }) {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Determine active tab based on current route
   const activeTab = useMemo(() => {
     if (location.pathname.includes("/add/")) return "add";
@@ -27,13 +27,13 @@ function LiquidityTabs({ processId }: { processId: string }) {
   return (
     <div className="mt-4">
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-3 bg-primary/20">
           <TabsTrigger value="add">Add</TabsTrigger>
           <TabsTrigger value="remove">Remove</TabsTrigger>
           <TabsTrigger value="claim">Claim</TabsTrigger>
         </TabsList>
       </Tabs>
-    </div>
+        </div>
   );
 }
 
@@ -42,7 +42,7 @@ export const LiquidityAdd = withWalletAuth(() => {
   return <LiquidityAddComponent LiquidityTabs={LiquidityTabs} />;
 });
 
-// Remove Liquidity Route  
+// Remove Liquidity Route
 export const LiquidityRemove = withWalletAuth(() => {
   return <LiquidityRemoveComponent LiquidityTabs={LiquidityTabs} />;
 });

@@ -1,8 +1,8 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Simple skeleton for loading values only
+// Simple skeleton for loading values only  
 export function ValueSkeleton({ className = "h-4 w-16" }: { className?: string }) {
-  return <Skeleton className={className} />;
+  return <Skeleton className={`bg-gray-200 ${className}`} />;
 }
 
 // Helper function to clamp decimals for numeric inputs

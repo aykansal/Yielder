@@ -1,8 +1,8 @@
 // API functions for pool data, token balances, and token list
 
-import { connect } from "@permaweb/aoconnect";
+import { connect, createSigner } from "@permaweb/aoconnect";
 import { luaProcessId } from "./constants/index.constants";
-import { messageAR } from "./arkit";
+import { messageAR, readHandler } from "./arkit";
 import {
   CU_URL,
   GATEWAY_URL,
@@ -89,14 +89,14 @@ export async function getPoolInfo(poolProcessId: string): Promise<PoolInfo> {
     }
 
     const data = await response.json();
-    
+
     if (!data.Messages || data.Messages.length === 0) {
       throw new Error('No pool data found');
     }
 
     const tags = data.Messages[0].Tags;
     const tagMap: Record<string, string> = {};
-    
+
     tags.forEach((tag: { name: string; value: string }) => {
       tagMap[tag.name] = tag.value;
     });
@@ -138,7 +138,7 @@ export async function getUserTokenBalance(tokenProcessId: string, walletAddress:
         Id: "0000000000000000000000000000000000000000001",
         Target: tokenProcessId,
         Owner: walletAddress,
-        Anchor: "0", 
+        Anchor: "0",
         Data: "1234",
         Tags: [
           {
@@ -146,7 +146,7 @@ export async function getUserTokenBalance(tokenProcessId: string, walletAddress:
             value: "Balance"
           },
           {
-            name: "Recipient", 
+            name: "Recipient",
             value: walletAddress
           },
           {
@@ -170,14 +170,14 @@ export async function getUserTokenBalance(tokenProcessId: string, walletAddress:
     }
 
     const data = await response.json();
-    
+
     if (!data.Messages || data.Messages.length === 0) {
       throw new Error('No balance data found');
     }
 
     const tags = data.Messages[0].Tags;
     const tagMap: Record<string, string> = {};
-    
+
     tags.forEach((tag: { name: string; value: string }) => {
       tagMap[tag.name] = tag.value;
     });
@@ -220,11 +220,41 @@ export function findTokenBySymbol(tokens: Token[], symbol: string): Token | unde
   return tokens.find(token => token.symbol.toLowerCase() === symbol.toLowerCase());
 }
 
+export async function getAllPools() {
+  const ao = connect({
+    GATEWAY_URL,
+    GRAPHQL_URL,
+    MODE,
+    CU_URL,
+  });
+  await ao
+    .message({
+      process: luaProcessId,
+      signer: createSigner(window.arweaveWallet),
+      tags: [{ name: "Action", value: "Pool-Details" }],
+    })
+    .then(async (messageId) => {
+      console.log("[pools.tsx] poolsRefresh_messageId:", messageId);
+      await ao.result({
+        process: luaProcessId,
+        message: messageId,
+      });
+    });
+  const res = await readHandler({
+    action: "cronpooldata",
+    process: luaProcessId,
+  });
+  return res
+}
+
 // Helper function to check if a pool exists for token pair
 export async function checkPoolExists(tokenAProcess: string, tokenBProcess: string): Promise<boolean> {
   try {
-    // This would need to be implemented based on your pool discovery mechanism
-    // For now, returning true as placeholder
+
+    const res = await getAllPools()
+
+    
+
     return true;
   } catch (error) {
     console.error('Error checking pool existence:', error);
@@ -261,7 +291,7 @@ export async function getBestStake(tokenXProcess: string, tokenYProcess: string)
           message: messageId,
         })
         .then((res) => {
-          console.log("[api.ts] message-result:",res);
+          console.log("[api.ts] message-result:", res);
           return res.Messages[0].Data;
         });
       return JSON.parse(messageResult);

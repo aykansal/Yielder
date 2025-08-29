@@ -35,6 +35,7 @@ import {
   getBestStake,
   findTokenByProcess,
   type Token,
+  getAllPools,
 } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import {
@@ -55,6 +56,7 @@ import {
 } from "@/lib/constants/arkit.constants";
 import { connect, createSigner } from "@permaweb/aoconnect";
 import { readHandler } from "@/lib/arkit";
+import { PoolAPIResponse } from "@/types/pool.types";
 
 export type Pool = {
   processId: string;
@@ -67,41 +69,6 @@ export type Pool = {
   contract: string;
   name: string;
   ticker: string;
-};
-
-type PoolAPIResponse = {
-  PERMASWAP: Record<
-    string,
-    {
-      tvl: number;
-      tokenA: string;
-      tokenB: string;
-      symbolX: string;
-      symbolY: string;
-      fee: string;
-      apr: number;
-      dexName: "PERMASWAP";
-      poolAddress: string;
-      ticker: string;
-      name: string;
-      denomination: string;
-    }
-  >;
-  BOTEGA: Record<
-    string,
-    {
-      tvl: number;
-      tokenA: string;
-      tokenB: string;
-      fee: string;
-      apr: number;
-      dexName: "BOTEGA";
-      poolAddress: string;
-      ticker: string;
-      name: string;
-      denomination: string;
-    }
-  >;
 };
 
 // Transform API response to Pool array
@@ -177,37 +144,14 @@ const handlePoolsRefresh = async (
   setLoading: (loading: boolean) => void,
 ) => {
   setLoading(true);
-  const ao = connect({
-    GATEWAY_URL,
-    GRAPHQL_URL,
-    MODE,
-    CU_URL,
-  });
+
   try {
-    await ao
-      .message({
-        process: luaProcessId,
-        signer: createSigner(window.arweaveWallet),
-        tags: [{ name: "Action", value: "Pool-Details" }],
-      })
-      .then(async (messageId) => {
-        console.log("[pools.tsx] poolsRefresh_messageId:", messageId);
-        await ao.result({
-          process: luaProcessId,
-          message: messageId,
-        });
-      });
-    const res = await readHandler({
-      action: "cronpooldata",
-      process: luaProcessId,
-    });
+    const res = (await getAllPools()) as PoolAPIResponse;
+    console.log("[pools.tsx] poolsRefresh_res:", res);
 
-    // console.log("[pools.tsx] poolsRefresh_res:", res);
-
-    const transformedPools = transformPoolData(res as PoolAPIResponse);
+    const transformedPools = transformPoolData(res);
     setPools(transformedPools);
     console.log("[pools.tsx] Loaded pools:", transformedPools.length, "pools");
-
   } catch (error) {
     console.error("Failed to fetch pools:", error);
     throw error; // Re-throw to be caught by the calling function
@@ -215,6 +159,10 @@ const handlePoolsRefresh = async (
     setLoading(false);
   }
 };
+
+function genrate(){
+  
+}
 
 export default function Pools() {
   const [q, setQ] = useState("");
@@ -498,7 +446,7 @@ export default function Pools() {
       </div>
 
       {/* Best Stake Section */}
-      <div className="mb-8 rounded-[16px] border bg-gradient-to-r from-blue-50 to-purple-50 p-6 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+      <div className="mb-8 rounded-[16px] border bg-background p-6 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
         <div className="mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
             Find Best Stake

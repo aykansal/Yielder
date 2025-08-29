@@ -68,8 +68,16 @@ export default function Dashboard() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm">{p.pooledA.toFixed(8)} wAR</div>
-                    <div className="text-sm">{p.pooledB.toFixed(8)} ARIO</div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-900">{p.pooledA.toFixed(6)}</span>
+                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">wAR</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-900">{p.pooledB.toFixed(6)}</span>
+                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">ARIO</span>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>${p.myUsd.toLocaleString()}</TableCell>
                   <TableCell>
