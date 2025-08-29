@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router";
-import { shortenAddress } from "@/lib/format";
+import { shortenAddress } from "@/lib/helpers.utils";
 import { ExternalLink, LogOut, Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth, useWalletActions } from "@/hooks/use-global-state";
@@ -43,30 +43,46 @@ export function Navbar() {
         </div>
 
         <nav className="hidden md:flex items-center gap-8">
-          {tabs
-            .filter((t) => t.public)
-            .map((t) => (
-              <NavLink
-                key={t.to}
-                to={t.to}
-                className={({ isActive }) =>
-                  `relative text-sm font-medium text-foreground/80 hover:text-foreground transition-colors ${isActive ? "text-foreground" : ""}`
-                }
-              >
-                {({ isActive }) => (
-                  <span className="inline-flex flex-col items-center">
-                    <span>{t.label}</span>
-                    <span
-                      className={`mt-1 h-0.5 w-8 rounded-full transition-all ${
-                        isActive
-                          ? "bg-[hsl(var(--primary-700))]"
-                          : "bg-transparent"
-                      }`}
-                    />
-                  </span>
-                )}
-              </NavLink>
-            ))}
+          <NavLink
+            key={tabs[0].to}
+            to={tabs[0].to}
+            className={({ isActive }) =>
+              `relative text-sm font-medium text-foreground/80 hover:text-foreground transition-colors ${isActive ? "text-foreground" : ""}`
+            }
+          >
+            {({ isActive }) => (
+              <span className="inline-flex flex-col items-center">
+                <span>{tabs[0].label}</span>
+                <span
+                  className={`mt-1 h-0.5 w-8 rounded-full transition-all ${
+                    isActive ? "bg-[hsl(var(--primary-700))]" : "bg-transparent"
+                  }`}
+                />
+              </span>
+            )}
+          </NavLink>
+          {isAuthenticated && (
+            <NavLink
+              key={tabs[1].to}
+              to={tabs[1].to}
+              className={({ isActive }) =>
+                `relative text-sm font-medium text-foreground/80 hover:text-foreground transition-colors ${isActive ? "text-foreground" : ""}`
+              }
+            >
+              {({ isActive }) => (
+                <span className="inline-flex flex-col items-center">
+                  <span>{tabs[1].label}</span>
+                  <span
+                    className={`mt-1 h-0.5 w-8 rounded-full transition-all ${
+                      isActive
+                        ? "bg-[hsl(var(--primary-700))]"
+                        : "bg-transparent"
+                    }`}
+                  />
+                </span>
+              )}
+            </NavLink>
+          )}
         </nav>
 
         <div className="flex items-center gap-3">

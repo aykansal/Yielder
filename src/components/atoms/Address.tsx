@@ -1,5 +1,5 @@
 import { ExternalLink } from "lucide-react";
-import { shortenAddress } from "@/lib/format";
+import { shortenAddress } from "@/lib/helpers.utils";
 
 export function Address({
   addr,

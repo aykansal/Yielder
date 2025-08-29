@@ -16,7 +16,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatPercent, formatUSD } from "@/lib/format";
 import { MoreHorizontal, RefreshCw, Search } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,9 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useAuth } from "@/hooks/use-global-state";
-import { luaProcessId } from "@/lib/constants/index.constants";
+import {
+  airdropTokenOptions,
+  luaProcessId,
+} from "@/lib/constants/index.constants";
 import {
   getTokenList,
   getBestStake,
@@ -48,119 +49,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Gift } from "lucide-react";
-import {
-  CU_URL,
-  GATEWAY_URL,
-  GRAPHQL_URL,
-  MODE,
-} from "@/lib/constants/arkit.constants";
-import { connect, createSigner } from "@permaweb/aoconnect";
-import { readHandler } from "@/lib/arkit";
-import { PoolAPIResponse } from "@/types/pool.types";
-
-export type Pool = {
-  processId: string;
-  dex: "PERMASWAP" | "BOTEGA";
-  tokenA: { symbol: string; address: string; decimals: number };
-  tokenB: { symbol: string; address: string; decimals: number };
-  swapFeePct: number; // e.g. 0.003
-  tvlUsd: number;
-  aprPct: number; // 0.089 -> 8.9%
-  contract: string;
-  name: string;
-  ticker: string;
-};
-
-// Transform API response to Pool array
-const transformPoolData = (apiData: PoolAPIResponse): Pool[] => {
-  const pools: Pool[] = [];
-
-  // Process PERMASWAP pools
-  if (apiData?.PERMASWAP) {
-    Object.entries(apiData.PERMASWAP).forEach(([processId, poolData]) => {
-      pools.push({
-        processId,
-        dex: "PERMASWAP",
-        tokenA: {
-          symbol: poolData.symbolX || "Unknown",
-          address: poolData.tokenA,
-          decimals: parseInt(poolData.denomination) || 12,
-        },
-        tokenB: {
-          symbol: poolData.symbolY || "Unknown",
-          address: poolData.tokenB,
-          decimals: parseInt(poolData.denomination) || 12,
-        },
-        swapFeePct: parseFloat(poolData.fee) / 10000, // Convert from basis points
-        tvlUsd: poolData.tvl,
-        aprPct: poolData.apr,
-        contract: poolData.poolAddress,
-        name: poolData.name,
-        ticker: poolData.ticker,
-      });
-    });
-  }
-
-  // Process BOTEGA pools
-  if (apiData?.BOTEGA) {
-    Object.entries(apiData.BOTEGA).forEach(([processId, poolData]) => {
-      pools.push({
-        processId,
-        dex: "BOTEGA",
-        tokenA: {
-          symbol: extractSymbolFromName(poolData.name, 0),
-          address: poolData.tokenA,
-          decimals: parseInt(poolData.denomination) || 12,
-        },
-        tokenB: {
-          symbol: extractSymbolFromName(poolData.name, 1),
-          address: poolData.tokenB,
-          decimals: parseInt(poolData.denomination) || 12,
-        },
-        swapFeePct: parseFloat(poolData.fee) / 10000, // Convert from basis points
-        tvlUsd: poolData.tvl,
-        aprPct: poolData.apr,
-        contract: poolData.poolAddress,
-        name: poolData.name,
-        ticker: poolData.ticker,
-      });
-    });
-  }
-
-  return pools;
-};
-
-// Helper function to extract symbols from Botega pool names like "Botega LP YT1/YT3"
-const extractSymbolFromName = (name: string, index: 0 | 1): string => {
-  const match = name.match(/LP\s+(\w+)\/(\w+)/);
-  if (match) {
-    return index === 0 ? match[1] : match[2];
-  }
-  return "Unknown";
-};
-
-const handlePoolsRefresh = async (
-  setPools: (pools: Pool[]) => void,
-  setLoading: (loading: boolean) => void,
-) => {
-  setLoading(true);
-
-  try {
-    const res = (await getAllPools()) as PoolAPIResponse;
-    console.log("[pools.tsx] poolsRefresh_res:", res);
-
-    const transformedPools = transformPoolData(res);
-    setPools(transformedPools);
-    console.log("[pools.tsx] Loaded pools:", transformedPools.length, "pools");
-  } catch (error) {
-    console.error("Failed to fetch pools:", error);
-    throw error; // Re-throw to be caught by the calling function
-  } finally {
-    setLoading(false);
-  }
-};
-
-function genrate() {}
+import { messageAR } from "@/lib/arkit";
+import { Pool, PoolAPIResponse } from "@/types/pool.types";
+import { transformPoolData, transformBestStakeData } from "@/lib/pools.utils";
+import { connect } from "@permaweb/aoconnect";
 
 export default function Pools() {
   const [q, setQ] = useState("");
@@ -190,10 +82,22 @@ export default function Pools() {
   const refreshPools = React.useCallback(async () => {
     setError(null);
     try {
-      await handlePoolsRefresh(setPools, setLoading);
+      setLoading(true);
+      const res = (await getAllPools()) as PoolAPIResponse;
+
+      const transformedPools = await transformPoolData(res);
+      console.log("transformedPools", transformedPools);
+      setPools(transformedPools);
+      console.log(
+        "[pools.tsx] Loaded pools:",
+        transformedPools.length,
+        "pools",
+      );
     } catch (err) {
       setError("Failed to load pools. Please try again.");
       console.error("Pool refresh error:", err);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -229,45 +133,18 @@ export default function Pools() {
       setBestStakeLoading(true);
       setBestStakeError(null);
       setBestStakePool(null);
-
+      console.log(selectedTokenX, selectedTokenY);
       const bestStakeData = await getBestStake(selectedTokenX, selectedTokenY);
 
-      // Transform the best stake response to Pool format
-      // This is similar to transformPoolData but for a single pool response
-      if (
-        bestStakeData &&
-        bestStakeData.Messages &&
-        bestStakeData.Messages.length > 0
-      ) {
-        // For now, we'll create a mock pool based on the selected tokens
-        // In real implementation, parse the actual response
-        const tokenX = findTokenByProcess(availableTokens, selectedTokenX);
-        const tokenY = findTokenByProcess(availableTokens, selectedTokenY);
+      console.log("[pools.tsx] bestStakeData:", bestStakeData);
+      if (bestStakeData) {
+        const transformedBestStakePool = transformBestStakeData(bestStakeData);
+        console.log(
+          "[pools.tsx] transformedBestStakePool:",
+          transformedBestStakePool,
+        );
 
-        if (tokenX && tokenY) {
-          const mockBestStakePool: Pool = {
-            processId: "best-stake-result",
-            dex: "PERMASWAP", // This would come from the actual response
-            tokenA: {
-              symbol: tokenX.symbol,
-              address: tokenX.process,
-              decimals: tokenX.decimals,
-            },
-            tokenB: {
-              symbol: tokenY.symbol,
-              address: tokenY.process,
-              decimals: tokenY.decimals,
-            },
-            swapFeePct: 0.003, // This would come from the actual response
-            tvlUsd: 0, // This would come from the actual response
-            aprPct: 0, // This would come from the actual response
-            contract: "best-stake-contract",
-            name: `${tokenX.symbol}-${tokenY.symbol}-Best`,
-            ticker: `${tokenX.symbol}-${tokenY.symbol}-Best`,
-          };
-
-          setBestStakePool(mockBestStakePool);
-        }
+        setBestStakePool(transformedBestStakePool);
       } else {
         setBestStakeError("No optimal pool found for this token pair");
       }
@@ -292,14 +169,26 @@ export default function Pools() {
         throw new Error("Please enter a valid quantity");
       }
 
-      const result = await readHandler({
-        action: "YT1Airdrop",
+      const result = await messageAR({
         process: luaProcessId,
         tags: [
+          {
+            name: "Action",
+            value: airdropTokenOptions.find(
+              (t) => t.value === selectedAirdropToken,
+            )?.action,
+          },
           { name: "Quantity", value: quantity.toString() },
           { name: "Recipient", value: wallet?.address || "" },
           { name: "Token", value: selectedAirdropToken },
         ],
+      }).then(async (messageId) => {
+        const ao = connect({ MODE: "legacy" });
+        const messageResult = await ao.result({
+          process: luaProcessId,
+          message: messageId,
+        });
+        return messageResult;
       });
 
       console.log("Airdrop result:", result);
@@ -320,12 +209,6 @@ export default function Pools() {
       setAirdropLoading(false);
     }
   };
-
-  const airdropTokenOptions = [
-    { value: "YT1", label: "YT1 Token", description: "Yielder Token 1" },
-    { value: "YT2", label: "YT2 Token", description: "Yielder Token 2" },
-    { value: "YT3", label: "YT3 Token", description: "Yielder Token 3" },
-  ];
 
   const filtered = useMemo(() => {
     let list = [...pools];
@@ -593,14 +476,14 @@ export default function Pools() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {bestStakePool.tvlUsd > 0
-                        ? formatUSD(bestStakePool.tvlUsd)
-                        : "$0.00"}
+                      ${bestStakePool.tvlUsd > 0
+                        ? (bestStakePool.tvlUsd).toFixed(3)
+                        : "0.00"}
                     </TableCell>
                     <TableCell>
                       {bestStakePool.aprPct > 0 ? (
                         <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
-                          {(bestStakePool.aprPct * 100).toFixed(2)}%
+                          {bestStakePool.aprPct.toFixed(2)}%
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-500">
@@ -841,12 +724,12 @@ export default function Pools() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    {p.tvlUsd > 0 ? formatUSD(p.tvlUsd) : "$0.00"}
+                    ${p.tvlUsd > 0 ? (p.tvlUsd).toFixed(3) : "0.00"}
                   </TableCell>
                   <TableCell>
                     {p.aprPct > 0 ? (
                       <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
-                        {formatPercent(p.aprPct)}
+                        {p.aprPct.toFixed(2)}%
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700">

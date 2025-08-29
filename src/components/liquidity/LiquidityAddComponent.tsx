@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Link2, RefreshCw } from "lucide-react";
-import { formatTokenAmount as formatAmount } from "@/lib/format";
+import { formatTokenAmount as formatAmount } from "@/lib/helpers.utils";
 import {
   getPoolInfo,
   getUserTokenBalance,
@@ -83,6 +83,11 @@ export function LiquidityAddComponent({ LiquidityTabs }: { LiquidityTabs: React.
 
         setAvailableTokens(tokens);
         setPoolInfo(pool);
+
+        // Check if pool info was loaded successfully
+        if (!pool) {
+          throw new Error("Failed to load pool information");
+        }
 
         // Find tokens based on pool info
         const foundTokenA = findTokenByProcess(tokens, pool.tokenA);

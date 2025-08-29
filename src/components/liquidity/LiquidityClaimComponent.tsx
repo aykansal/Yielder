@@ -53,6 +53,11 @@ export function LiquidityClaimComponent({ LiquidityTabs }: { LiquidityTabs: Reac
         setAvailableTokens(tokens);
         setPoolInfo(pool);
 
+        // Check if pool info was loaded successfully
+        if (!pool) {
+          throw new Error("Failed to load pool information");
+        }
+
         // Find tokens based on pool info
         const foundTokenA = findTokenByProcess(tokens, pool.tokenA);
         const foundTokenB = findTokenByProcess(tokens, pool.tokenB);

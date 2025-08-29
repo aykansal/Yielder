@@ -5,6 +5,13 @@ export {
     luaProcessId
 }
 
+
+export const airdropTokenOptions = [
+    { value: "YT1", label: "YT1 Token", description: "Yielder Token 1",action:"YT1Airdrop" },
+    { value: "YT2", label: "YT2 Token", description: "Yielder Token 2",action:"YT2Airdrop" },
+    { value: "YT3", label: "YT3 Token", description: "Yielder Token 3",action:"YT3Airdrop" },
+];
+
 export const samplePools = {
     PERMASWAP: {
         "bmR1GHhqKJa9MrQe9g8gC8OrNcitWyFRuVKADIKNXc8": {

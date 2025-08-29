@@ -19,6 +19,8 @@ import {
   AOScheduler,
   CommonTags,
 } from "@/lib/constants/arkit.constants";
+import { createSigner, message, results } from "@permaweb/aoconnect";
+import { getTagValue } from "./helpers.utils";
 
 export interface DispatchResult {
   id: string;
@@ -386,54 +388,6 @@ export const useQuickWallet = async (): Promise<{
   }
 };
 
-/*
-export async function connectWallet(): Promise<string | undefined> {
-  if (typeof window === 'undefined' || !window.arweaveWallet) {
-    console.error(
-      'Cannot connect wallet in non-browser environment or wallet not found'
-    );
-    return;
-  }
-  try {
-    console.log('Connecting wallet...');
-    // No need for explicit check again, done above
-
-    await window.arweaveWallet.connect(
-      [
-        'ENCRYPT',
-        'DECRYPT',
-        'DISPATCH',
-        'SIGNATURE',
-        'ACCESS_TOKENS',
-        'ACCESS_ADDRESS',
-        'SIGN_TRANSACTION',
-        'ACCESS_PUBLIC_KEY',
-        'ACCESS_ALL_ADDRESSES',
-        'ACCESS_ARWEAVE_CONFIG',
-      ],
-      {
-        name: 'Anon',
-        logo: 'https://arweave.net/pYIMnXpJRFUwTzogx_z5HCOPRRjCbSPYIlUqOjJ9Srs',
-      },
-      {
-        host: HOST_NAME,
-        port: PORT_NUM,
-        protocol: PROTOCOL_TYPE,
-      }
-    );
-
-    console.log('Wallet connected successfully');
-    return 'connected wallet successfully';
-  } catch (error) {
-    if (error === 'User cancelled the AuthRequest') {
-      // console.log('User cancelled the AuthRequest');
-      return 'User cancelled the AuthRequest';
-    }
-    console.error('Connect wallet error:', error);
-    throw error;
-  }
-}
-*/
 
 export const WalletConnectionResult = {
   ERROR: "error",
@@ -617,5 +571,92 @@ export async function getTokens(): Promise<UserToken[]> {
   } catch (error) {
     console.error("Get tokens error:", error);
     throw error;
+  }
+}
+export async function messageResults(args: {
+  processId: string;
+  wallet: any;
+  action: string;
+  tags: Tag[] | null;
+  data: any;
+  responses?: string[];
+  handler?: string;
+}): Promise<any> {
+  try {
+    const tags = [{ name: 'Action', value: args.action }];
+    if (args.tags) tags.push(...args.tags);
+
+    await message({
+      process: args.processId,
+      signer: createSigner(args.wallet),
+      tags: tags,
+      data: JSON.stringify(args.data),
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const messageResults = await results({
+      process: args.processId,
+      sort: 'DESC',
+      limit: 100,
+    });
+
+    if (messageResults && messageResults.edges && messageResults.edges.length) {
+      const response = {};
+
+      for (const result of messageResults.edges) {
+        if (result.node && result.node.Messages && result.node.Messages.length) {
+          const resultSet = [args.action];
+          if (args.responses) resultSet.push(...args.responses);
+
+          for (const message of result.node.Messages) {
+            const action = getTagValue(message.Tags, 'Action');
+
+            if (action) {
+              let responseData = null;
+              const messageData = message.Data;
+
+              if (messageData) {
+                try {
+                  responseData = JSON.parse(messageData);
+                } catch {
+                  responseData = messageData;
+                }
+              }
+
+              const responseStatus = getTagValue(message.Tags, 'Status');
+              const responseMessage = getTagValue(message.Tags, 'Message');
+
+              if (action === 'Action-Response') {
+                const responseHandler = getTagValue(message.Tags, 'Handler');
+                if (args.handler && args.handler === responseHandler) {
+                  response[action] = {
+                    status: responseStatus,
+                    message: responseMessage,
+                    data: responseData,
+                  };
+                }
+              } else {
+                if (resultSet.includes(action)) {
+                  response[action] = {
+                    status: responseStatus,
+                    message: responseMessage,
+                    data: responseData,
+                  };
+                }
+              }
+
+              if (Object.keys(response).length === resultSet.length) break;
+            }
+          }
+        }
+      }
+
+      return response;
+    }
+
+    return null;
+  } catch (e) {
+    console.error(e);
   }
 }
