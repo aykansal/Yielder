@@ -268,7 +268,7 @@ export default function Pools() {
                         <SelectItem key={token.value} value={token.value}>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{token.label}</span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-muted-foreground">
                               {token.description}
                             </span>
                           </div>
@@ -289,8 +289,8 @@ export default function Pools() {
                   />
                 </div>
                 {wallet?.address && (
-                  <div className="rounded-lg bg-gray-50 p-3">
-                    <p className="text-xs text-gray-600">
+                  <div className="rounded-lg bg-muted p-3">
+                    <p className="text-xs text-muted-foreground">
                       <span className="font-medium">Wallet:</span>{" "}
                       {wallet.address}
                     </p>
@@ -329,17 +329,17 @@ export default function Pools() {
       {/* Best Stake Section */}
       <div className="mb-8 rounded-[16px] border bg-background p-6 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-foreground">
             Find Best Stake
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Select tokens to find the liquidity pool with max Yield.
           </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-foreground">
               Token X
             </label>
             <Select value={selectedTokenX} onValueChange={setSelectedTokenX}>
@@ -351,7 +351,7 @@ export default function Pools() {
                   <SelectItem key={token.process} value={token.process}>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{token.symbol}</span>
-                      <span className="text-xs text-gray-500 truncate max-w-24">
+                      <span className="text-xs text-muted-foreground truncate max-w-24">
                         {token.fullName}
                       </span>
                     </div>
@@ -362,7 +362,7 @@ export default function Pools() {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-foreground">
               Token Y
             </label>
             <Select value={selectedTokenY} onValueChange={setSelectedTokenY}>
@@ -374,7 +374,7 @@ export default function Pools() {
                   <SelectItem key={token.process} value={token.process}>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{token.symbol}</span>
-                      <span className="text-xs text-gray-500 truncate max-w-24">
+                      <span className="text-xs text-muted-foreground truncate max-w-24">
                         {token.fullName}
                       </span>
                     </div>
@@ -420,7 +420,7 @@ export default function Pools() {
 
         {/* Best Stake Error */}
         {bestStakeError && (
-          <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+          <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
             {bestStakeError}
           </div>
         )}
@@ -428,10 +428,10 @@ export default function Pools() {
         {/* Best Stake Result */}
         {bestStakePool && (
           <div className="mt-6">
-            <h3 className="mb-3 text-sm font-semibold text-gray-900">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">
               🏆 Recommended Pool
             </h3>
-            <div className="rounded-lg border bg-white shadow-sm">
+            <div className="rounded-lg border bg-card shadow-sm">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -471,7 +471,7 @@ export default function Pools() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                      <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400">
                         {(bestStakePool.swapFeePct * 100).toFixed(2)}%
                       </span>
                     </TableCell>
@@ -482,11 +482,11 @@ export default function Pools() {
                     </TableCell>
                     <TableCell>
                       {bestStakePool.aprPct > 0 ? (
-                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                        <span className="inline-flex items-center rounded-full bg-green-500/10 px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400">
                           {bestStakePool.aprPct.toFixed(2)}%
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-500">
+                        <span className="inline-flex items-center rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
                           0.00%
                         </span>
                       )}
@@ -557,7 +557,7 @@ export default function Pools() {
       {/* All Pools Section */}
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">All Pools</h2>
+          <h2 className="text-lg font-semibold text-foreground">All Pools</h2>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -610,10 +610,10 @@ export default function Pools() {
         </div>
       </div>
 
-      <div className="rounded-[16px] border bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+      <div className="rounded-[16px] border bg-card p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
         {error ? (
           <div className="p-12 text-center">
-            <div className="text-red-600 mb-4">{error}</div>
+            <div className="text-destructive mb-4">{error}</div>
             <Button onClick={refreshPools} variant="outline">
               Try Again
             </Button>
@@ -635,30 +635,30 @@ export default function Pools() {
               {Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell>
-                    <Skeleton className="h-6 w-20 bg-gray-200" />
+                    <Skeleton className="h-6 w-20" />
                   </TableCell>
                   <TableCell>
                     <div className="space-y-2">
-                      <Skeleton className="h-5 w-32 bg-gray-200" />
-                      <Skeleton className="h-3 w-24 bg-gray-100" />
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-3 w-24" />
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Skeleton className="h-6 w-16 bg-gray-200 rounded-full" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
                   </TableCell>
                   <TableCell>
-                    <Skeleton className="h-4 w-20 bg-gray-200" />
+                    <Skeleton className="h-4 w-20" />
                   </TableCell>
                   <TableCell>
-                    <Skeleton className="h-6 w-16 bg-gray-200 rounded-full" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
                   </TableCell>
                   <TableCell>
-                    <Skeleton className="h-4 w-8 bg-gray-200" />
+                    <Skeleton className="h-4 w-8" />
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Skeleton className="h-8 w-16 bg-gray-200" />
-                      <Skeleton className="h-8 w-8 bg-gray-200" />
+                      <Skeleton className="h-8 w-16" />
+                      <Skeleton className="h-8 w-8" />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -719,7 +719,7 @@ export default function Pools() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                    <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400">
                       {(p.swapFeePct * 100).toFixed(2)}%
                     </span>
                   </TableCell>
@@ -728,11 +728,11 @@ export default function Pools() {
                   </TableCell>
                   <TableCell>
                     {p.aprPct > 0 ? (
-                      <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                      <span className="inline-flex items-center rounded-full bg-green-500/10 px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400">
                         {p.aprPct.toFixed(2)}%
                       </span>
                     ) : (
-                      <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700">
+                      <span className="inline-flex items-center rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
                         0.00%
                       </span>
                     )}

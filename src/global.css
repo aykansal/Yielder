@@ -45,6 +45,81 @@ layer(base);
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
+  /* Extended gray scale */
+  --color-gray-50: hsl(var(--gray-50));
+  --color-gray-100: hsl(var(--gray-100));
+  --color-gray-200: hsl(var(--gray-200));
+  --color-gray-300: hsl(var(--gray-300));
+  --color-gray-400: hsl(var(--gray-400));
+  --color-gray-500: hsl(var(--gray-500));
+  --color-gray-600: hsl(var(--gray-600));
+  --color-gray-700: hsl(var(--gray-700));
+  --color-gray-800: hsl(var(--gray-800));
+  --color-gray-900: hsl(var(--gray-900));
+  --color-gray-950: hsl(var(--gray-950));
+
+  /* Primary color variations */
+  --color-primary-50: hsl(var(--primary-50));
+  --color-primary-100: hsl(var(--primary-100));
+  --color-primary-200: hsl(var(--primary-200));
+  --color-primary-300: hsl(var(--primary-300));
+  --color-primary-400: hsl(var(--primary-400));
+  --color-primary-500: hsl(var(--primary-500));
+  --color-primary-600: hsl(var(--primary-600));
+  --color-primary-700: hsl(var(--primary-700));
+  --color-primary-800: hsl(var(--primary-800));
+  --color-primary-900: hsl(var(--primary-900));
+  --color-primary-950: hsl(var(--primary-950));
+
+  /* Status colors */
+  --color-red-50: hsl(var(--red-50));
+  --color-red-100: hsl(var(--red-100));
+  --color-red-200: hsl(var(--red-200));
+  --color-red-300: hsl(var(--red-300));
+  --color-red-400: hsl(var(--red-400));
+  --color-red-500: hsl(var(--red-500));
+  --color-red-600: hsl(var(--red-600));
+  --color-red-700: hsl(var(--red-700));
+  --color-red-800: hsl(var(--red-800));
+  --color-red-900: hsl(var(--red-900));
+  --color-red-950: hsl(var(--red-950));
+
+  --color-green-50: hsl(var(--green-50));
+  --color-green-100: hsl(var(--green-100));
+  --color-green-200: hsl(var(--green-200));
+  --color-green-300: hsl(var(--green-300));
+  --color-green-400: hsl(var(--green-400));
+  --color-green-500: hsl(var(--green-500));
+  --color-green-600: hsl(var(--green-600));
+  --color-green-700: hsl(var(--green-700));
+  --color-green-800: hsl(var(--green-800));
+  --color-green-900: hsl(var(--green-900));
+  --color-green-950: hsl(var(--green-950));
+
+  --color-blue-50: hsl(var(--blue-50));
+  --color-blue-100: hsl(var(--blue-100));
+  --color-blue-200: hsl(var(--blue-200));
+  --color-blue-300: hsl(var(--blue-300));
+  --color-blue-400: hsl(var(--blue-400));
+  --color-blue-500: hsl(var(--blue-500));
+  --color-blue-600: hsl(var(--blue-600));
+  --color-blue-700: hsl(var(--blue-700));
+  --color-blue-800: hsl(var(--blue-800));
+  --color-blue-900: hsl(var(--blue-900));
+  --color-blue-950: hsl(var(--blue-950));
+
+  --color-yellow-50: hsl(var(--yellow-50));
+  --color-yellow-100: hsl(var(--yellow-100));
+  --color-yellow-200: hsl(var(--yellow-200));
+  --color-yellow-300: hsl(var(--yellow-300));
+  --color-yellow-400: hsl(var(--yellow-400));
+  --color-yellow-500: hsl(var(--yellow-500));
+  --color-yellow-600: hsl(var(--yellow-600));
+  --color-yellow-700: hsl(var(--yellow-700));
+  --color-yellow-800: hsl(var(--yellow-800));
+  --color-yellow-900: hsl(var(--yellow-900));
+  --color-yellow-950: hsl(var(--yellow-950));
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -118,8 +193,8 @@ layer(base);
 
 @layer base {
   :root {
-    /* Light mode tokens */
-    --background: 0 0% 100%;
+    /* Light mode tokens - softened whites */
+    --background: 0 0% 98%;
     --foreground: 222.2 47.4% 11.2%;
 
     --card: 0 0% 100%;
@@ -168,45 +243,137 @@ layer(base);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Base colors - sophisticated dark theme */
+    --background: 220 26% 9%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 220 26% 12%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 220 26% 12%;
     --popover-foreground: 210 40% 98%;
 
+    /* Primary - keeping the pink theme */
     --primary: 336 75% 71%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    /* Secondary and muted colors with better contrast */
+    --secondary: 220 26% 16%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 26% 14%;
+    --muted-foreground: 215 16% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 220 26% 16%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    /* Semantic colors */
+    --destructive: 0 62% 45%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --success: 142 76% 36%;
+    --success-foreground: 355 100% 97%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 89%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 210 40% 98%;
+
+    /* Borders and inputs */
+    --border: 220 26% 20%;
+    --input: 220 26% 16%;
     --ring: 336 75% 71%;
 
-    --sidebar-background: 222.2 84% 4.9%;
+    /* Sidebar colors */
+    --sidebar-background: 220 26% 8%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 336 75% 71%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent: 220 26% 14%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-border: 220 26% 18%;
     --sidebar-ring: 336 75% 71%;
 
-    --primary-600: 339 79% 85%;
+    /* Extended gray scale for dark theme */
+    --gray-50: 220 26% 96%;
+    --gray-100: 220 26% 92%;
+    --gray-200: 220 26% 84%;
+    --gray-300: 220 26% 70%;
+    --gray-400: 220 26% 55%;
+    --gray-500: 220 26% 45%;
+    --gray-600: 220 26% 35%;
+    --gray-700: 220 26% 25%;
+    --gray-800: 220 26% 18%;
+    --gray-900: 220 26% 12%;
+    --gray-950: 220 26% 8%;
+
+    /* Primary color variations */
+    --primary-50: 336 100% 97%;
+    --primary-100: 336 100% 94%;
+    --primary-200: 336 100% 88%;
+    --primary-300: 336 85% 82%;
+    --primary-400: 336 80% 76%;
+    --primary-500: 336 78% 74%;
+    --primary-600: 336 76% 72%;
     --primary-700: 336 75% 71%;
+    --primary-800: 336 70% 65%;
+    --primary-900: 336 65% 55%;
+    --primary-950: 336 60% 45%;
+
+    /* Status color variations */
+    --red-50: 0 100% 97%;
+    --red-100: 0 100% 94%;
+    --red-200: 0 100% 88%;
+    --red-300: 0 85% 82%;
+    --red-400: 0 80% 70%;
+    --red-500: 0 75% 65%;
+    --red-600: 0 70% 60%;
+    --red-700: 0 62% 45%;
+    --red-800: 0 55% 35%;
+    --red-900: 0 50% 25%;
+    --red-950: 0 45% 15%;
+
+    --green-50: 142 100% 97%;
+    --green-100: 142 100% 94%;
+    --green-200: 142 100% 88%;
+    --green-300: 142 85% 82%;
+    --green-400: 142 80% 70%;
+    --green-500: 142 75% 65%;
+    --green-600: 142 70% 60%;
+    --green-700: 142 76% 36%;
+    --green-800: 142 55% 30%;
+    --green-900: 142 50% 25%;
+    --green-950: 142 45% 15%;
+
+    --blue-50: 199 100% 97%;
+    --blue-100: 199 100% 94%;
+    --blue-200: 199 100% 88%;
+    --blue-300: 199 85% 82%;
+    --blue-400: 199 80% 70%;
+    --blue-500: 199 75% 65%;
+    --blue-600: 199 70% 60%;
+    --blue-700: 199 89% 48%;
+    --blue-800: 199 55% 35%;
+    --blue-900: 199 50% 25%;
+    --blue-950: 199 45% 15%;
+
+    --yellow-50: 38 100% 97%;
+    --yellow-100: 38 100% 94%;
+    --yellow-200: 38 100% 88%;
+    --yellow-300: 38 85% 82%;
+    --yellow-400: 38 80% 70%;
+    --yellow-500: 38 75% 65%;
+    --yellow-600: 38 70% 60%;
+    --yellow-700: 38 92% 50%;
+    --yellow-800: 38 55% 35%;
+    --yellow-900: 38 50% 25%;
+    --yellow-950: 38 45% 15%;
+
+    /* Shadows for dark theme */
+    --elev-1: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --elev-2: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --elev-3: 0 16px 64px rgba(0, 0, 0, 0.5);
   }
 }
 

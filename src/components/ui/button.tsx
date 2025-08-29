@@ -11,14 +11,14 @@ const buttonVariants = cva(
       variant: {
         // Default: white fill + pink border; hover -> pink fill + white text
         default:
-          "bg-white text-foreground border border-[hsl(var(--primary-700))] text-[hsl(var(--primary-700))] hover:bg-[hsl(var(--primary-700))] hover:text-white",
+          "bg-background text-foreground border border-[hsl(var(--primary-700))] text-[hsl(var(--primary-700))] hover:bg-[hsl(var(--primary-700))] hover:text-white dark:hover:bg-[hsl(var(--primary-700))]/10 dark:hover:text-[hsl(var(--primary-700))]",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
-          "bg-white text-[hsl(var(--primary-700))] border border-[hsl(var(--primary-700))] hover:bg-[hsl(var(--primary))]",
+          "bg-background text-[hsl(var(--primary-700))] border border-[hsl(var(--primary-700))] hover:bg-[hsl(var(--primary-700))] hover:text-white dark:hover:bg-[hsl(var(--primary-700))]/20 dark:hover:text-[hsl(var(--primary-700))]",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        ghost: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/80 dark:hover:text-foreground",
         link: "text-[hsl(var(--primary-700))] underline-offset-4 hover:underline",
         filled:
           "bg-[hsl(var(--primary-700))] text-white hover:bg-[hsl(var(--primary-600))]",

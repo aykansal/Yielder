@@ -31,7 +31,7 @@ export default function Dashboard() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">User Dashboard</h1>
       </div>
-      <div className="rounded-[16px] border bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+      <div className="rounded-[16px] border bg-card p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
         {positions.length === 0 ? (
           <div className="p-12 text-center text-muted-foreground">
             You have no positions yet.
@@ -70,18 +70,18 @@ export default function Dashboard() {
                   <TableCell>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">{p.pooledA.toFixed(6)}</span>
-                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">wAR</span>
+                        <span className="font-semibold text-foreground">{p.pooledA.toFixed(6)}</span>
+                        <span className="text-xs font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">wAR</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">{p.pooledB.toFixed(6)}</span>
-                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">ARIO</span>
+                        <span className="font-semibold text-foreground">{p.pooledB.toFixed(6)}</span>
+                        <span className="text-xs font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">ARIO</span>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>${p.myUsd.toLocaleString()}</TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700">
+                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
                       Full Range
                     </span>
                   </TableCell>
@@ -91,7 +91,7 @@ export default function Dashboard() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700">
+                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
                       Unavailable
                     </span>
                   </TableCell>

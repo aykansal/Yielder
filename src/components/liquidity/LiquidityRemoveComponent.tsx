@@ -133,7 +133,7 @@ export function LiquidityRemoveComponent({ LiquidityTabs }: { LiquidityTabs: Rea
       >
         <div className="space-y-4">
           <div className="rounded-[16px] border bg-green-50 p-5 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
-            <div className="mb-2 text-3xl font-bold text-green-700">
+            <div className="mb-2 text-3xl font-bold text-green-600 dark:text-green-400">
               {percent[0]}%
             </div>
             <Slider
@@ -147,7 +147,7 @@ export function LiquidityRemoveComponent({ LiquidityTabs }: { LiquidityTabs: Rea
               {[0, 25, 50, 75, 100].map((t) => (
                 <button
                   key={t}
-                  className="rounded-full bg-white/70 px-2 py-0.5 text-green-700 shadow-xs transition-colors hover:bg-white"
+                  className="rounded-full bg-card/70 px-2 py-0.5 text-green-600 dark:text-green-400 shadow-xs transition-colors hover:bg-card"
                   onClick={() => setPercent([t])}
                 >
                   {t}%
@@ -157,7 +157,7 @@ export function LiquidityRemoveComponent({ LiquidityTabs }: { LiquidityTabs: Rea
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-[16px] border bg-white p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+            <div className="rounded-[16px] border bg-card p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
               <div className="text-muted-foreground">
                 {tokenA ? `${tokenA.symbol} amount` : "Token A amount"}
               </div>
@@ -165,7 +165,7 @@ export function LiquidityRemoveComponent({ LiquidityTabs }: { LiquidityTabs: Rea
                 {tokenA ? out.tokenA.toFixed(Math.min(tokenA.decimals, 10)) : <ValueSkeleton className="h-6 w-16" />}
               </div>
             </div>
-            <div className="rounded-[16px] border bg-white p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+            <div className="rounded-[16px] border bg-card p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
               <div className="text-muted-foreground">
                 {tokenB ? `${tokenB.symbol} amount` : "Token B amount"}
               </div>
@@ -218,7 +218,7 @@ export function LiquidityRemoveComponent({ LiquidityTabs }: { LiquidityTabs: Rea
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-[16px] border bg-white p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[16px] border bg-card p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
             <div className="font-medium">Fee & Rates</div>
             <div className="mt-2 grid gap-2 text-muted-foreground">
               <div className="flex items-center justify-between">

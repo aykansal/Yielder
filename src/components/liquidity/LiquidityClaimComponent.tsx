@@ -112,7 +112,7 @@ export function LiquidityClaimComponent({ LiquidityTabs }: { LiquidityTabs: Reac
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="mt-6 space-y-4"
       >
-        <div className="rounded-[16px] border bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+        <div className="rounded-[16px] border bg-card p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
           {!poolInfo || !tokenA || !tokenB ? (
             <div className="py-10 text-center text-muted-foreground">
               <ValueSkeleton className="h-5 w-32 mx-auto mb-2" />

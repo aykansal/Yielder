@@ -246,7 +246,7 @@ export function LiquidityAddComponent({ LiquidityTabs }: { LiquidityTabs: React.
   return (
     <div>
       <h1 className="text-2xl font-semibold">Liquidity</h1>
-      <div className="mt-4 rounded-[16px] border bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+      <div className="mt-4 rounded-[16px] border bg-card p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
         <div className="flex items-center justify-between gap-4">
           <div className="text-sm">
             <div className="font-semibold">
@@ -279,7 +279,7 @@ export function LiquidityAddComponent({ LiquidityTabs }: { LiquidityTabs: React.
       >
         <div className="space-y-4">
           {/* Token A input */}
-          <div className="rounded-[16px] border bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[16px] border bg-card p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
             <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
               <span>Token A {tokenA ? `(${tokenA.symbol})` : ""}</span>
               <button
@@ -310,7 +310,7 @@ export function LiquidityAddComponent({ LiquidityTabs }: { LiquidityTabs: React.
                     <SelectItem key={t.process} value={t.symbol}>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{t.symbol}</span>
-                        <span className="text-xs text-gray-500 truncate max-w-24">
+                        <span className="text-xs text-muted-foreground truncate max-w-24">
                           {t.fullName}
                         </span>
                       </div>
@@ -342,7 +342,7 @@ export function LiquidityAddComponent({ LiquidityTabs }: { LiquidityTabs: React.
           </div>
 
           {/* Ratio slider */}
-          <div className="rounded-[16px] border bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[16px] border bg-card p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Ratio A/B</span>
               <button
@@ -391,7 +391,7 @@ export function LiquidityAddComponent({ LiquidityTabs }: { LiquidityTabs: React.
           </div>
 
           {/* Token B input */}
-          <div className="rounded-[16px] border bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[16px] border bg-card p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
             <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
               <span>Token B {tokenB ? `(${tokenB.symbol})` : ""}</span>
               <button
@@ -422,7 +422,7 @@ export function LiquidityAddComponent({ LiquidityTabs }: { LiquidityTabs: React.
                     <SelectItem key={t.process} value={t.symbol}>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{t.symbol}</span>
-                        <span className="text-xs text-gray-500 truncate max-w-24">
+                        <span className="text-xs text-muted-foreground truncate max-w-24">
                           {t.fullName}
                         </span>
                       </div>
@@ -511,7 +511,7 @@ export function LiquidityAddComponent({ LiquidityTabs }: { LiquidityTabs: React.
 
         <div className="space-y-4">
           {/* Fee & Rates */}
-          <div className="rounded-[16px] border bg-white p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[16px] border bg-card p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
             <div className="mb-3 flex items-center justify-between">
               <div className="font-medium">Fee & Rates</div>
               <button className="rounded-md border px-2 py-1 text-xs">
@@ -548,7 +548,7 @@ export function LiquidityAddComponent({ LiquidityTabs }: { LiquidityTabs: React.
           </div>
 
           {/* Pool Stats */}
-          <div className="rounded-[16px] border bg-white p-4 text-sm text-muted-foreground shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+          <div className="rounded-[16px] border bg-card p-4 text-sm text-muted-foreground shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
                 <span>Share of pool</span>
