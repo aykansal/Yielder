@@ -15,6 +15,13 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@arweave-wallet-kit/browser-wallet-strategy": "^0.1.1",
+    "@arweave-wallet-kit/core": "^0.1.1",
+    "@arweave-wallet-kit/othent-strategy": "^0.1.1",
+    "@arweave-wallet-kit/react": "^0.3.2",
+    "@arweave-wallet-kit/styles": "^0.1.1",
+    "@arweave-wallet-kit/wander-strategy": "^0.1.2",
+    "@arweave-wallet-kit/webwallet-strategy": "0.0.1-beta.4",
     "@permaweb/aoconnect": "^0.0.90",
     "arweave": "^1.15.7",
     "axios": "^1.11.0",
@@ -85,6 +92,7 @@
     "tsx": "^4.20.3",
     "typescript": "^5.9.2",
     "vaul": "^1.1.2",
-    "vite": "^7.1.2"
+    "vite": "^7.1.2",
+    "vite-plugin-node-polyfills": "^0.24.0"
   }
 }

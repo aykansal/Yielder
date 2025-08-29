@@ -221,30 +221,40 @@ export function findTokenBySymbol(tokens: Token[], symbol: string): Token | unde
 }
 
 export async function getAllPools() {
-  const ao = connect({
-    GATEWAY_URL,
-    GRAPHQL_URL,
-    MODE,
-    CU_URL,
-  });
-  await ao
-    .message({
-      process: luaProcessId,
-      signer: createSigner(window.arweaveWallet),
-      tags: [{ name: "Action", value: "Pool-Details" }],
-    })
-    .then(async (messageId) => {
-      console.log("[pools.tsx] poolsRefresh_messageId:", messageId);
-      await ao.result({
-        process: luaProcessId,
-        message: messageId,
+  // Check if wallet is connected before trying to send message
+  if (window.arweaveWallet) {
+    try {
+      const ao = connect({
+        GATEWAY_URL,
+        GRAPHQL_URL,
+        MODE,
+        CU_URL,
       });
-    });
+      await ao
+        .message({
+          process: luaProcessId,
+          signer: createSigner(window.arweaveWallet),
+          tags: [{ name: "Action", value: "Pool-Details" }],
+        })
+        .then(async (messageId) => {
+          console.log("[pools.tsx] poolsRefresh_messageId:", messageId);
+          await ao.result({
+            process: luaProcessId,
+            message: messageId,
+          });
+        });
+    } catch (error) {
+      console.warn("Failed to send Pool-Details message (wallet may not be connected):", error);
+      // Continue to read handler even if message sending fails
+    }
+  }
+  
+  // Read pool data - this should work without wallet connection
   const res = await readHandler({
     action: "cronpooldata",
     process: luaProcessId,
   });
-  return res
+  return res;
 }
 
 // Helper function to check if a pool exists for token pair

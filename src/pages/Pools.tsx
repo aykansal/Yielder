@@ -160,9 +160,7 @@ const handlePoolsRefresh = async (
   }
 };
 
-function genrate(){
-  
-}
+function genrate() {}
 
 export default function Pools() {
   const [q, setQ] = useState("");
@@ -356,8 +354,8 @@ export default function Pools() {
         <div>
           <h1 className="text-2xl font-semibold">Pools</h1>
         </div>
-        {/* Token Airdrop Button */}
-        <ProtectedRoute showCard={false}>
+        {/* Token Airdrop Button - Only show when wallet is connected */}
+        {isAuthenticated && (
           <Dialog open={airdropModalOpen} onOpenChange={setAirdropModalOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="gap-2">
@@ -442,7 +440,7 @@ export default function Pools() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </ProtectedRoute>
+        )}
       </div>
 
       {/* Best Stake Section */}
@@ -613,14 +611,7 @@ export default function Pools() {
                     <TableCell>—</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <ProtectedRoute
-                          showCard={false}
-                          fallback={
-                            <Button size="sm" variant="outline" disabled>
-                              Add
-                            </Button>
-                          }
-                        >
+                        {isAuthenticated && (
                           <Button
                             size="sm"
                             onClick={() =>
@@ -629,7 +620,7 @@ export default function Pools() {
                           >
                             Add
                           </Button>
-                        </ProtectedRoute>
+                        )}
 
                         {isAuthenticated && (
                           <DropdownMenu>
@@ -866,21 +857,14 @@ export default function Pools() {
                   <TableCell className="text-muted-foreground">—</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <ProtectedRoute
-                        showCard={false}
-                        fallback={
-                          <Button variant="outline" size="sm" disabled>
-                            Connect Wallet
-                          </Button>
-                        }
-                      >
+                      {isAuthenticated && (
                         <Button
                           size="sm"
                           onClick={() => nav(`/liquidity/add/${p.processId}`)}
                         >
                           Add
                         </Button>
-                      </ProtectedRoute>
+                      )}
 
                       {isAuthenticated && (
                         <DropdownMenu>
