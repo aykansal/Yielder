@@ -1,4 +1,4 @@
-import type { Tag } from "./arkit";
+import type { Tag } from "../arkit";
 
 // config constants
 export const PROTOCOL_TYPE = "https";

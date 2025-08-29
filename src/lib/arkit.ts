@@ -18,7 +18,7 @@ import {
   AOModule,
   AOScheduler,
   CommonTags,
-} from "@/lib/arkit.constants";
+} from "@/lib/constants/arkit.constants";
 
 export interface DispatchResult {
   id: string;
@@ -54,8 +54,7 @@ interface MessageResponse {
   id: string;
   recipient: string;
   tags: { name: string; value: string }[];
-  // @ts-expect-error ignore
-  data;
+  data
   owner: string;
 }
 
@@ -475,7 +474,7 @@ export async function connectWallet(): Promise<WalletConnectionResponse> {
         "DECRYPT",
         "DISPATCH",
         "SIGNATURE",
-        // @ts-expect-error ignore
+        // @ts-expect-error
         "ACCESS_TOKENS",
         "ACCESS_ADDRESS",
         "SIGN_TRANSACTION",
@@ -484,7 +483,7 @@ export async function connectWallet(): Promise<WalletConnectionResponse> {
         "ACCESS_ARWEAVE_CONFIG",
       ],
       {
-        name: "socials-test",
+        name: "Yield-Dev",
         logo: "https://arweave.net/pYIMnXpJRFUwTzogx_z5HCOPRRjCbSPYIlUqOjJ9Srs",
       },
       {

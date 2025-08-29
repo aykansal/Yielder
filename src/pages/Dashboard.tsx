@@ -1,4 +1,3 @@
-import { AppShell } from "@/components/layout/AppShell";
 import {
   Table,
   TableBody,
@@ -9,23 +8,26 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { DEXBadge } from "@/components/atoms/DEXBadge";
 
 const positions = [
   {
     processId: "gjnaCsEd749Z11",
-    pair: "wAR / ARIO",
-    address: "0xabc12345def67890abcd",
+    dex: "Permaswap" as const,
+    pair: "YT3 / YT1",
+    address: "bmR1GHhqKJa9MrQe9g8gC8OrNcitWyFRuVKADIKNXc8",
     pooledA: 0.00000162,
     pooledB: 0.01738629,
-    myUsd: 1234.56,
-    aprPct: 0.089,
+    myUsd: 124.56,
+    aprPct: 0.000,
   },
 ];
 
 export default function Dashboard() {
   const nav = useNavigate();
   return (
-    <AppShell>
+    <ProtectedRoute>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">User Dashboard</h1>
       </div>
@@ -38,6 +40,7 @@ export default function Dashboard() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>DEX</TableHead>
                 <TableHead>Pool</TableHead>
                 <TableHead>Pool Balance</TableHead>
                 <TableHead>My Position</TableHead>
@@ -51,6 +54,9 @@ export default function Dashboard() {
               {positions.map((p) => (
                 <TableRow key={p.processId} className="hover:bg-secondary/60">
                   <TableCell>
+                    <DEXBadge name={p.dex} />
+                  </TableCell>
+                  <TableCell>
                     <button
                       className="text-left font-semibold hover:underline"
                       onClick={() => nav(`/liquidity/add/${p.processId}`)}
@@ -62,23 +68,45 @@ export default function Dashboard() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm">{p.pooledA} wAR</div>
-                    <div className="text-sm">{p.pooledB} ARIO</div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-900">{p.pooledA.toFixed(6)}</span>
+                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">wAR</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-900">{p.pooledB.toFixed(6)}</span>
+                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">ARIO</span>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>${p.myUsd.toLocaleString()}</TableCell>
-                  <TableCell>Full Range</TableCell>
-                  <TableCell>{(p.aprPct * 100).toFixed(2)}%</TableCell>
-                  <TableCell>Unavailable</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700">
+                      Full Range
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                      {(p.aprPct * 100).toFixed(2)}%
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700">
+                      Unavailable
+                    </span>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
+                        size="sm"
                         onClick={() => nav(`/liquidity/claim/${p.processId}`)}
                         className="text-green-600 hover:text-green-700 hover:bg-green-50"
                       >
                         Claim
                       </Button>
                       <Button
+                        size="sm"
                         onClick={() => nav(`/liquidity/add/${p.processId}`)}
                       >
                         Add
@@ -91,6 +119,6 @@ export default function Dashboard() {
           </Table>
         )}
       </div>
-    </AppShell>
+    </ProtectedRoute>
   );
 }

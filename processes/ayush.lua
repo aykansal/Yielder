@@ -829,7 +829,7 @@ DATA_POOL = {}
 CRONDATAPOOL = {}
 USER_RUNNING_HANDLER = false
 Send({
-    Target = "aPbLwv3daFtcPEgkH0lqgmcJQudaogBjHOOSTxNoyJY",
+    Target = "gT--BkeUkCWqE6fLvFJ_p13ypIDcjeLhq2LBkJocRQs",
     Action = "Best-Stake",
     TokenX =
     "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU",
@@ -855,6 +855,7 @@ TOKEN_PRICES = {
 }
 
 Handlers.add("Best-Stake", "Best-Stake", function(msg)
+    print("Best-Stake-Run")
     local TokenX = msg.TokenX
     local TokenY = msg.TokenY
 
