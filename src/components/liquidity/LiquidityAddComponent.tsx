@@ -84,7 +84,7 @@ export function LiquidityAddComponent({ LiquidityTabs }: { LiquidityTabs: React.
         setAvailableTokens(tokens);
         setPoolInfo(pool);
 
-        // Check if pool info was loaded successfully
+        // Check if pool  info was loaded successfully
         if (!pool) {
           throw new Error("Failed to load pool information");
         }
@@ -113,7 +113,7 @@ export function LiquidityAddComponent({ LiquidityTabs }: { LiquidityTabs: React.
     };
 
     loadData();
-  }, [processId, wallet?.address]);
+  }, [processId]);
 
   // Load token balances
   const loadTokenBalances = async (

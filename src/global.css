@@ -194,7 +194,7 @@ layer(base);
 @layer base {
   :root {
     /* Light mode tokens - softened whites */
-    --background: 0 0% 98%;
+    --background: 0 0% 100%;
     --foreground: 222.2 47.4% 11.2%;
 
     --card: 0 0% 100%;

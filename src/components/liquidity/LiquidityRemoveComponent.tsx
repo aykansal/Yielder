@@ -91,7 +91,7 @@ export function LiquidityRemoveComponent({ LiquidityTabs }: { LiquidityTabs: Rea
     };
 
     loadData();
-  }, [processId, wallet?.address]);
+  }, [processId]);
 
   // Mock pooled amounts - in real implementation, fetch user's LP position
   const pooled = poolInfo

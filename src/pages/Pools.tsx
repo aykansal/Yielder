@@ -59,6 +59,7 @@ export default function Pools() {
   const [dex, setDex] = useState<"All" | "PERMASWAP" | "BOTEGA">("All");
   const [sort, setSort] = useState<"APR" | "TVL" | "Fees">("APR");
   const [loading, setLoading] = useState(true); // Start with loading true
+  const [updating, setUpdating] = useState(false); // For background updates
   const [pools, setPools] = useState<Pool[]>([]);
   const [error, setError] = useState<string | null>(null);
   const nav = useNavigate();
@@ -72,17 +73,24 @@ export default function Pools() {
   const [bestStakeLoading, setBestStakeLoading] = useState(false);
   const [bestStakeError, setBestStakeError] = useState<string | null>(null);
 
-  // Token Airdrop States
+  // Token Airdrop Form State
   const [airdropModalOpen, setAirdropModalOpen] = useState(false);
-  const [selectedAirdropToken, setSelectedAirdropToken] = useState<string>("");
-  const [airdropQuantity, setAirdropQuantity] = useState<string>("");
-  const [airdropLoading, setAirdropLoading] = useState(false);
+  const [airdropForm, setAirdropForm] = useState({
+    token: "",
+    quantity: "",
+    loading: false
+  });
 
   // Enhanced refresh function with error handling
-  const refreshPools = React.useCallback(async () => {
+  const refreshPools = React.useCallback(async (isBackgroundUpdate = false) => {
     setError(null);
     try {
-      setLoading(true);
+      if (!isBackgroundUpdate) {
+        setLoading(true);
+      } else {
+        setUpdating(true);
+      }
+
       const res = (await getAllPools()) as PoolAPIResponse;
 
       const transformedPools = await transformPoolData(res);
@@ -97,7 +105,11 @@ export default function Pools() {
       setError("Failed to load pools. Please try again.");
       console.error("Pool refresh error:", err);
     } finally {
-      setLoading(false);
+      if (!isBackgroundUpdate) {
+        setLoading(false);
+      } else {
+        setUpdating(false);
+      }
     }
   }, []);
 
@@ -116,6 +128,19 @@ export default function Pools() {
     refreshPools();
     loadTokens();
   }, [refreshPools, loadTokens]);
+
+  // Cron job for continuous data fetching
+  React.useEffect(() => {
+    const cronInterval = setInterval(() => {
+      if (pools.length > 0) { // Only run background updates if we have initial data
+        refreshPools(true); // true = background update
+      }
+    }, 3000); // Fetch every 30 seconds
+
+    return () => {
+      clearInterval(cronInterval);
+    };
+  }, [pools.length, refreshPools]);
 
   // Handle Best Stake search
   const handleBestStake = async () => {
@@ -156,15 +181,28 @@ export default function Pools() {
     }
   };
 
-  // Token Airdrop Handler
+  // Token Airdrop Form Handlers
+  const updateAirdropForm = (field: keyof typeof airdropForm, value: string) => {
+    setAirdropForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const resetAirdropForm = () => {
+    setAirdropForm({
+      token: "",
+      quantity: "",
+      loading: false
+    });
+  };
+
   const handleTokenAirdrop = async () => {
-    if (!selectedAirdropToken || !airdropQuantity || !wallet?.address) {
+    if (!airdropForm.token || !airdropForm.quantity || !wallet?.address) {
       return;
     }
 
-    setAirdropLoading(true);
+    setAirdropForm(prev => ({ ...prev, loading: true }));
+
     try {
-      const quantity = parseInt(airdropQuantity);
+      const quantity = parseInt(airdropForm.quantity);
       if (isNaN(quantity) || quantity <= 0) {
         throw new Error("Please enter a valid quantity");
       }
@@ -175,12 +213,12 @@ export default function Pools() {
           {
             name: "Action",
             value: airdropTokenOptions.find(
-              (t) => t.value === selectedAirdropToken,
+              (t) => t.value === airdropForm.token,
             )?.action,
           },
           { name: "Quantity", value: quantity.toString() },
           { name: "Recipient", value: wallet?.address || "" },
-          { name: "Token", value: selectedAirdropToken },
+          { name: "Token", value: airdropForm.token },
         ],
       }).then(async (messageId) => {
         const ao = connect({ MODE: "legacy" });
@@ -194,19 +232,18 @@ export default function Pools() {
       console.log("Airdrop result:", result);
 
       // Reset form and close modal
-      setSelectedAirdropToken("");
-      setAirdropQuantity("");
+      resetAirdropForm();
       setAirdropModalOpen(false);
 
       // Show success message (you can add toast here)
       alert(
-        `Successfully requested airdrop of ${quantity} ${selectedAirdropToken} tokens!`,
+        `Successfully requested airdrop of ${quantity} ${airdropForm.token} tokens!`,
       );
     } catch (err) {
       console.error("Airdrop error:", err);
       alert("Failed to request airdrop. Please try again.");
     } finally {
-      setAirdropLoading(false);
+      setAirdropForm(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -239,9 +276,17 @@ export default function Pools() {
         </div>
         {/* Token Airdrop Button - Only show when wallet is connected */}
         {isAuthenticated && (
-          <Dialog open={airdropModalOpen} onOpenChange={setAirdropModalOpen}>
+          <Dialog
+            open={airdropModalOpen}
+            onOpenChange={(open) => {
+              setAirdropModalOpen(open);
+              if (!open) {
+                resetAirdropForm();
+              }
+            }}
+          >
             <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
+              <Button variant="filled" className="gap-2">
                 <Gift className="h-4 w-4" />
                 Token Airdrop
               </Button>
@@ -257,8 +302,8 @@ export default function Pools() {
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Select Token</label>
                   <Select
-                    value={selectedAirdropToken}
-                    onValueChange={setSelectedAirdropToken}
+                    value={airdropForm.token}
+                    onValueChange={(value) => updateAirdropForm('token', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose token to airdrop" />
@@ -282,8 +327,8 @@ export default function Pools() {
                   <Input
                     type="number"
                     placeholder="Enter quantity"
-                    value={airdropQuantity}
-                    onChange={(e) => setAirdropQuantity(e.target.value)}
+                    value={airdropForm.quantity}
+                    onChange={(e) => updateAirdropForm('quantity', e.target.value)}
                     min="1"
                     step="1"
                   />
@@ -301,17 +346,17 @@ export default function Pools() {
                 <Button
                   variant="outline"
                   onClick={() => setAirdropModalOpen(false)}
-                  disabled={airdropLoading}
+                  disabled={airdropForm.loading}
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleTokenAirdrop}
                   disabled={
-                    airdropLoading || !selectedAirdropToken || !airdropQuantity
+                    airdropForm.loading || !airdropForm.token || !airdropForm.quantity
                   }
                 >
-                  {airdropLoading ? (
+                  {airdropForm.loading ? (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                       Processing...
@@ -556,8 +601,14 @@ export default function Pools() {
 
       {/* All Pools Section */}
       <div className="mb-6 flex items-end justify-between">
-        <div>
+        <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-foreground">All Pools</h2>
+          {updating && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <RefreshCw className="h-3 w-3 animate-spin" />
+              Updating...
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -600,12 +651,12 @@ export default function Pools() {
             </SelectContent>
           </Select>
           <Button
-            onClick={refreshPools}
+            onClick={() => refreshPools(false)}
             variant="outline"
             size="icon"
-            disabled={loading}
+            disabled={loading || updating}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${(loading || updating) ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>
@@ -614,11 +665,11 @@ export default function Pools() {
         {error ? (
           <div className="p-12 text-center">
             <div className="text-destructive mb-4">{error}</div>
-            <Button onClick={refreshPools} variant="outline">
+            <Button onClick={() => refreshPools(false)} variant="outline">
               Try Again
             </Button>
           </div>
-        ) : loading ? (
+        ) : loading && pools.length === 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -672,7 +723,7 @@ export default function Pools() {
               : "No pools match your search criteria."}
             {pools.length === 0 && (
               <div className="mt-4">
-                <Button onClick={refreshPools} variant="outline">
+                <Button onClick={() => refreshPools(false)} variant="outline">
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Refresh Pools
                 </Button>

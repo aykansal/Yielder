@@ -201,32 +201,30 @@ export function findTokenBySymbol(tokens: Token[], symbol: string): Token | unde
 }
 
 export async function getAllPools() {
-  const ao = connect({
-    GATEWAY_URL,
-    GRAPHQL_URL,
-    MODE,
-    // CU_URL,
-  });
-  if (window.arweaveWallet) {
-    try {
-      await ao
-        .message({
-          process: luaProcessId,
-          signer: createSigner(window.arweaveWallet),
-          tags: [{ name: "Action", value: "cron" }],
-        })
-        .then(async (messageId) => {
-          console.log("[pools.tsx] poolsRefresh_messageId:", messageId);
-          await ao.result({
-            process: luaProcessId,
-            message: messageId,
-          });
-        });
-
-    } catch (error) {
-      console.warn("Failed to send Pool-Details message (wallet may not be connected):", error);
-    }
-  }
+  // const ao = connect({
+  //   GATEWAY_URL,
+  //   GRAPHQL_URL,
+  //   MODE,
+  // });
+  // if (window.arweaveWallet) {
+  //   try {
+  //     await ao
+  //       .message({
+  //         process: luaProcessId,
+  //         signer: createSigner(window.arweaveWallet),
+  //         tags: [{ name: "Action", value: "cron" }],
+  //       })
+  //       .then(async (messageId) => {
+  //         console.log("[pools.tsx] poolsRefresh_messageId:", messageId);
+  //         await ao.result({
+  //           process: luaProcessId,
+  //           message: messageId,
+  //         });
+  //       });
+  //   } catch (error) {
+  //     console.warn("Failed to send Pool-Details message (wallet may not be connected):", error);
+  //   }
+  // }
 
   // Read pool data - this should work without wallet connection
   const res = await readHandler({
@@ -279,9 +277,9 @@ export async function getBestStake(tokenXProcess: string, tokenYProcess: string)
       ],
     }).then(async (messageId) => {
       await ao.result({
-          process: luaProcessId,
-          message: messageId,
-        })
+        process: luaProcessId,
+        message: messageId,
+      })
     });
 
     await new Promise((resolve) => setTimeout(resolve, 10000));
@@ -301,4 +299,9 @@ export async function getBestStake(tokenXProcess: string, tokenYProcess: string)
     console.error('Error fetching best stake:', error);
     throw error;
   }
+}
+
+
+export const addLiquidity = async () => {
+      
 }
