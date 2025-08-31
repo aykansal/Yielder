@@ -1,4 +1,4 @@
-import { Pool, PoolAPIResponse } from "@/types/pool.types";
+import { DEX, Pool, PoolAPIResponse } from "@/types/pool.types";
 
 // Helper function to extract symbols from Botega pool names like "Botega LP YT1/YT3"
 const extractSymbolFromName = (name: string, index: 0 | 1): string => {
@@ -15,10 +15,10 @@ export const transformBestStakeData = (bestStakeData: any): Pool => {
     const nameParts = bestStakeData.name.split('-');
     const symbolX = nameParts[0] || "Unknown";
     const symbolY = nameParts[1] || "Unknown";
-    
+
     return {
         processId: bestStakeData.poolAddress,
-        dex: bestStakeData.dexName as "PERMASWAP" | "BOTEGA",
+        dex: bestStakeData.dexName,
         tokenA: {
             symbol: symbolX,
             address: bestStakeData.tokenA,
@@ -47,7 +47,7 @@ const transformPoolData = (apiData: PoolAPIResponse): Pool[] => {
         Object.entries(apiData.PERMASWAP).forEach(([processId, poolData]) => {
             pools.push({
                 processId,
-                dex: "PERMASWAP",
+                dex: DEX.PERMASWAP,
                 tokenA: {
                     symbol: poolData.symbolX || "Unknown",
                     address: poolData.tokenA,
@@ -73,7 +73,7 @@ const transformPoolData = (apiData: PoolAPIResponse): Pool[] => {
         Object.entries(apiData.BOTEGA).forEach(([processId, poolData]) => {
             pools.push({
                 processId,
-                dex: "BOTEGA",
+                dex: DEX.BOTEGA,
                 tokenA: {
                     symbol: extractSymbolFromName(poolData.name, 0),
                     address: poolData.tokenA,

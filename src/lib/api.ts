@@ -1,14 +1,15 @@
 // API functions for pool data, token balances, and token list
 
-import { connect, createSigner, dryrun, results } from "@permaweb/aoconnect";
+import { connect, createSigner, dryrun } from "@permaweb/aoconnect";
 import { luaProcessId } from "./constants/index.constants";
-import { messageAR, messageResults, readHandler } from "./arkit";
+import { messageAR, readHandler } from "./arkit";
 import {
   CU_URL,
   GATEWAY_URL,
   GRAPHQL_URL,
   MODE,
 } from "@/lib/constants/arkit.constants";
+import { DEX } from "@/types/pool.types";
 
 export interface PoolInfo {
   name: string;
@@ -17,17 +18,17 @@ export interface PoolInfo {
   symbolY: string;
   tokenA: string;
   tokenB: string;
-  decimalsX: number;
-  decimalsY: number;
-  fullNameX: string;
-  fullNameY: string;
+  // decimalsX: number;
+  // decimalsY: number;
+  // fullNameX: string;
+  // fullNameY: string;
   fee: string;
   totalSupply: string;
-  px: string;
-  py: string;
+  // px: string;
+  // py: string;
   denomination: string;
-  disableSwap: boolean;
-  disableLiquidity: boolean;
+  // disableSwap: boolean;
+  // disableLiquidity: boolean;
 }
 
 export interface TokenBalance {
@@ -50,9 +51,8 @@ export interface Token {
 }
 
 // 1. Get individual pool data
-export async function getPoolInfo(poolProcessId: string): Promise<PoolInfo> {
+export async function getPoolInfo(poolProcessId: string, dex: DEX): Promise<PoolInfo> {
   try {
-
     const data = await dryrun({
       process: poolProcessId,
       tags: [{ name: "Action", value: "Info" }]
@@ -76,24 +76,39 @@ export async function getPoolInfo(poolProcessId: string): Promise<PoolInfo> {
     // Debug: Log the mapped tag values
     console.log("[api.ts] Tag map:", tagMap);
 
+    if (dex === DEX.BOTEGA) {
+      const extractSymbolFromName = (name: string, index: 0 | 1): string => {
+        const match = name.match(/LP\s+(\w+)\/(\w+)/);
+        if (match) {
+          return index === 0 ? match[1] : match[2];
+        }
+        return "Unknown";
+      };
+      tagMap.SymbolX = extractSymbolFromName(tagMap.Name, 0);
+      tagMap.SymbolY = extractSymbolFromName(tagMap.Name, 1);
+    }
+
     const result = {
-      name: tagMap.Name || '',
-      ticker: tagMap.Ticker || '',
-      symbolX: tagMap.SymbolX || '',
-      symbolY: tagMap.SymbolY || '',
-      tokenA: tagMap.X || '',
-      tokenB: tagMap.Y || '',
+      name: tagMap.Name || 'NA',
+      ticker: tagMap.Ticker || 'NA',
+      symbolX: tagMap.SymbolX || 'NA',
+      symbolY: tagMap.SymbolY || 'NA',
+      tokenA: tagMap.X || tagMap.TokenA || 'NA',
+      tokenB: tagMap.Y || tagMap.TokenB || 'NA',
+      fee: tagMap.Fee || tagMap.FeeBps || 'NA',
+      totalSupply: tagMap.TotalSupply || 'NA',
+      denomination: tagMap.Denomination || '12',
+
+      /* ---- available in Permaswap not in Botega ------
       decimalsX: parseInt(tagMap.DecimalX || '12'),
       decimalsY: parseInt(tagMap.DecimalY || '12'),
       fullNameX: tagMap.FullNameX || '',
       fullNameY: tagMap.FullNameY || '',
-      fee: tagMap.Fee || '0',
-      totalSupply: tagMap.TotalSupply || '0',
-      px: tagMap.PX || '0',
+      px: tagMap.PX || tagMap.px || '0',
       py: tagMap.PY || '0',
-      denomination: tagMap.Denomination || '12',
       disableSwap: tagMap.DisableSwap === 'true',
       disableLiquidity: tagMap.DisableLiquidity === 'true',
+      */
     };
 
     // Debug: Log the final result object
@@ -109,47 +124,11 @@ export async function getPoolInfo(poolProcessId: string): Promise<PoolInfo> {
 // 2. Get user token balance
 export async function getUserTokenBalance(tokenProcessId: string, walletAddress: string): Promise<TokenBalance> {
   try {
-    const response = await fetch(`https://cu.ardrive.io/dry-run?process-id=${tokenProcessId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        Id: "0000000000000000000000000000000000000000001",
-        Target: tokenProcessId,
-        Owner: walletAddress,
-        Anchor: "0",
-        Data: "1234",
-        Tags: [
-          {
-            name: "Action",
-            value: "Balance"
-          },
-          {
-            name: "Recipient",
-            value: walletAddress
-          },
-          {
-            name: "Data-Protocol",
-            value: "ao"
-          },
-          {
-            name: "Type",
-            value: "Message"
-          },
-          {
-            name: "Variant",
-            value: "ao.TN.1"
-          }
-        ]
-      })
-    });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await dryrun({
+      process: tokenProcessId,
+      tags: [{ name: "Action", value: "Balance" }, { name: "Recipient", value: walletAddress }]
+    })
 
     if (!data.Messages || data.Messages.length === 0) {
       throw new Error('No balance data found');
@@ -226,13 +205,10 @@ export async function getAllPools() {
   //   }
   // }
 
-  // Read pool data - this should work without wallet connection
   const res = await readHandler({
     action: "cronpooldata",
     process: luaProcessId,
   });
-
-  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   console.log("[api.ts] results:", res);
 
@@ -303,5 +279,5 @@ export async function getBestStake(tokenXProcess: string, tokenYProcess: string)
 
 
 export const addLiquidity = async () => {
-      
+
 }

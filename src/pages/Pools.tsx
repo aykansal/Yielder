@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as React from "react";
 import { DEXBadge } from "@/components/atoms/DEXBadge";
 import { Button } from "@/components/ui/button";
@@ -50,14 +50,14 @@ import {
 } from "@/components/ui/dialog";
 import { Gift } from "lucide-react";
 import { messageAR } from "@/lib/arkit";
-import { Pool, PoolAPIResponse } from "@/types/pool.types";
+import { DEX, Pool, PoolAPIResponse } from "@/types/pool.types";
 import { transformPoolData, transformBestStakeData } from "@/lib/pools.utils";
 import { connect } from "@permaweb/aoconnect";
 
 export default function Pools() {
   const [q, setQ] = useState("");
-  const [dex, setDex] = useState<"All" | "PERMASWAP" | "BOTEGA">("All");
-  const [sort, setSort] = useState<"APR" | "TVL" | "Fees">("APR");
+  const [dex, setDex] = useState<"All" | DEX>("All");
+  const [sort, setSort] = useState<"APR" | "TVL" | "Fees">();
   const [loading, setLoading] = useState(true); // Start with loading true
   const [updating, setUpdating] = useState(false); // For background updates
   const [pools, setPools] = useState<Pool[]>([]);
@@ -78,9 +78,11 @@ export default function Pools() {
   const [airdropForm, setAirdropForm] = useState({
     token: "",
     quantity: "",
-    loading: false
+    loading: false,
   });
-
+  useEffect(() => {
+    document.title = "Liquidity Pools · Yielder";
+  }, []);
   // Enhanced refresh function with error handling
   const refreshPools = React.useCallback(async (isBackgroundUpdate = false) => {
     setError(null);
@@ -93,8 +95,8 @@ export default function Pools() {
 
       const res = (await getAllPools()) as PoolAPIResponse;
 
-      const transformedPools = await transformPoolData(res);
-      console.log("transformedPools", transformedPools);
+      const transformedPools = transformPoolData(res);
+      // console.log("transformedPools", transformedPools);
       setPools(transformedPools);
       console.log(
         "[pools.tsx] Loaded pools:",
@@ -132,10 +134,11 @@ export default function Pools() {
   // Cron job for continuous data fetching
   React.useEffect(() => {
     const cronInterval = setInterval(() => {
-      if (pools.length > 0) { // Only run background updates if we have initial data
+      if (pools.length > 0) {
+        // Only run background updates if we have initial data
         refreshPools(true); // true = background update
       }
-    }, 3000); // Fetch every 30 seconds
+    }, 30000); // Fetch every 30 seconds
 
     return () => {
       clearInterval(cronInterval);
@@ -182,15 +185,18 @@ export default function Pools() {
   };
 
   // Token Airdrop Form Handlers
-  const updateAirdropForm = (field: keyof typeof airdropForm, value: string) => {
-    setAirdropForm(prev => ({ ...prev, [field]: value }));
+  const updateAirdropForm = (
+    field: keyof typeof airdropForm,
+    value: string,
+  ) => {
+    setAirdropForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const resetAirdropForm = () => {
     setAirdropForm({
       token: "",
       quantity: "",
-      loading: false
+      loading: false,
     });
   };
 
@@ -199,7 +205,7 @@ export default function Pools() {
       return;
     }
 
-    setAirdropForm(prev => ({ ...prev, loading: true }));
+    setAirdropForm((prev) => ({ ...prev, loading: true }));
 
     try {
       const quantity = parseInt(airdropForm.quantity);
@@ -243,7 +249,7 @@ export default function Pools() {
       console.error("Airdrop error:", err);
       alert("Failed to request airdrop. Please try again.");
     } finally {
-      setAirdropForm(prev => ({ ...prev, loading: false }));
+      setAirdropForm((prev) => ({ ...prev, loading: false }));
     }
   };
 
@@ -303,7 +309,7 @@ export default function Pools() {
                   <label className="text-sm font-medium">Select Token</label>
                   <Select
                     value={airdropForm.token}
-                    onValueChange={(value) => updateAirdropForm('token', value)}
+                    onValueChange={(value) => updateAirdropForm("token", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose token to airdrop" />
@@ -328,7 +334,9 @@ export default function Pools() {
                     type="number"
                     placeholder="Enter quantity"
                     value={airdropForm.quantity}
-                    onChange={(e) => updateAirdropForm('quantity', e.target.value)}
+                    onChange={(e) =>
+                      updateAirdropForm("quantity", e.target.value)
+                    }
                     min="1"
                     step="1"
                   />
@@ -353,7 +361,9 @@ export default function Pools() {
                 <Button
                   onClick={handleTokenAirdrop}
                   disabled={
-                    airdropForm.loading || !airdropForm.token || !airdropForm.quantity
+                    airdropForm.loading ||
+                    !airdropForm.token ||
+                    !airdropForm.quantity
                   }
                 >
                   {airdropForm.loading ? (
@@ -492,20 +502,16 @@ export default function Pools() {
                 <TableBody>
                   <TableRow className="hover:bg-secondary/60">
                     <TableCell>
-                      <DEXBadge
-                        name={
-                          bestStakePool.dex === "PERMASWAP"
-                            ? "Permaswap"
-                            : "Botega"
-                        }
-                      />
+                      <DEXBadge name={bestStakePool.dex} />
                     </TableCell>
                     <TableCell>
                       <button
                         className={`text-left font-semibold ${isAuthenticated ? "hover:underline cursor-pointer" : "cursor-default"}`}
                         onClick={() =>
                           isAuthenticated &&
-                          nav(`/liquidity/add/${bestStakePool.processId}`)
+                          nav(
+                            `/liquidity?processId=${bestStakePool.processId}&type=add&dex=${bestStakePool.dex}`,
+                          )
                         }
                       >
                         {bestStakePool.tokenA.symbol} /{" "}
@@ -521,8 +527,9 @@ export default function Pools() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      ${bestStakePool.tvlUsd > 0
-                        ? (bestStakePool.tvlUsd).toFixed(3)
+                      $
+                      {bestStakePool.tvlUsd > 0
+                        ? bestStakePool.tvlUsd.toFixed(3)
                         : "0.00"}
                     </TableCell>
                     <TableCell>
@@ -543,7 +550,9 @@ export default function Pools() {
                           <Button
                             size="sm"
                             onClick={() =>
-                              nav(`/liquidity/add/${bestStakePool.processId}`)
+                              nav(
+                                `/liquidity?processId=${bestStakePool.processId}&type=add&dex=${bestStakePool.dex}`,
+                              )
                             }
                           >
                             Add
@@ -562,7 +571,7 @@ export default function Pools() {
                               <DropdownMenuItem
                                 onClick={() =>
                                   nav(
-                                    `/liquidity/add/${bestStakePool.processId}`,
+                                    `/liquidity?processId=${bestStakePool.processId}&type=add&dex=${bestStakePool.dex}`,
                                   )
                                 }
                               >
@@ -571,20 +580,11 @@ export default function Pools() {
                               <DropdownMenuItem
                                 onClick={() =>
                                   nav(
-                                    `/liquidity/remove/${bestStakePool.processId}`,
+                                    `/liquidity?processId=${bestStakePool.processId}&type=remove&dex=${bestStakePool.dex}`,
                                   )
                                 }
                               >
                                 Remove Liquidity
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  nav(
-                                    `/liquidity/claim/${bestStakePool.processId}`,
-                                  )
-                                }
-                              >
-                                Claim Rewards
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -637,17 +637,15 @@ export default function Pools() {
 
           <Select
             value={dex}
-            onValueChange={(value: "All" | "PERMASWAP" | "BOTEGA") =>
-              setDex(value)
-            }
+            onValueChange={(value: "All" | DEX) => setDex(value)}
           >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Select DEX" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="All">All DEXes</SelectItem>
-              <SelectItem value="PERMASWAP">Permaswap</SelectItem>
-              <SelectItem value="BOTEGA">Botega</SelectItem>
+              <SelectItem value="All">All DEXs</SelectItem>
+              <SelectItem value={DEX.PERMASWAP}>Permaswap</SelectItem>
+              <SelectItem value={DEX.BOTEGA}>Botega</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -656,7 +654,9 @@ export default function Pools() {
             size="icon"
             disabled={loading || updating}
           >
-            <RefreshCw className={`h-4 w-4 ${(loading || updating) ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${loading || updating ? "animate-spin animate-pulse" : ""}`}
+            />
           </Button>
         </div>
       </div>
@@ -747,15 +747,16 @@ export default function Pools() {
               {filtered.map((p) => (
                 <TableRow key={p.processId} className="hover:bg-secondary/60">
                   <TableCell>
-                    <DEXBadge
-                      name={p.dex === "PERMASWAP" ? "Permaswap" : "Botega"}
-                    />
+                    <DEXBadge name={p.dex} />
                   </TableCell>
                   <TableCell>
                     <button
                       className={`text-left font-semibold ${isAuthenticated ? "hover:underline cursor-pointer" : "cursor-default"}`}
                       onClick={() =>
-                        isAuthenticated && nav(`/liquidity/add/${p.processId}`)
+                        isAuthenticated &&
+                        nav(
+                          `/liquidity?processId=${p.processId}&type=add&dex=${p.dex}`,
+                        )
                       }
                     >
                       {p.tokenA.symbol} / {p.tokenB.symbol}
@@ -775,7 +776,7 @@ export default function Pools() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    ${p.tvlUsd > 0 ? (p.tvlUsd).toFixed(3) : "0.00"}
+                    ${p.tvlUsd > 0 ? p.tvlUsd.toFixed(3) : "0.00"}
                   </TableCell>
                   <TableCell>
                     {p.aprPct > 0 ? (
@@ -792,45 +793,28 @@ export default function Pools() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       {isAuthenticated && (
-                        <Button
-                          size="sm"
-                          onClick={() => nav(`/liquidity/add/${p.processId}`)}
-                        >
-                          Add
-                        </Button>
-                      )}
-
-                      {isAuthenticated && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() =>
-                                nav(`/liquidity/add/${p.processId}`)
-                              }
-                            >
-                              Add Liquidity
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                nav(`/liquidity/remove/${p.processId}`)
-                              }
-                            >
-                              Remove Liquidity
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                nav(`/liquidity/claim/${p.processId}`)
-                              }
-                            >
-                              Claim Rewards
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              nav(
+                                `/liquidity?processId=${p.processId}&type=add&dex=${p.dex}`,
+                              )
+                            }
+                          >
+                            Add
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              nav(
+                                `/liquidity?processId=${p.processId}&type=remove&dex=${p.dex}`,
+                              )
+                            }
+                          >
+                            Out
+                          </Button>
+                        </>
                       )}
                     </div>
                   </TableCell>

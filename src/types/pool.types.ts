@@ -1,3 +1,47 @@
+export interface Common {
+  name: string;
+  ticker: string;
+  denomination: string;
+  totalSupply: string;
+}
+export interface Botega extends Common {
+  tokenA: string;
+  tokenB: string;
+  fee: string; // Converted from FeeBps
+  logo?: string;
+}
+export interface Permaswap extends Common {
+  symbolX: string;
+  symbolY: string;
+  tokenA: string; // Mapped from X
+  tokenB: string; // Mapped from Y
+  decimalsX: number;
+  decimalsY: number;
+  fullNameX: string;
+  fullNameY: string;
+  fee: string;
+  px: string;
+  py: string;
+}
+
+export interface PoolInfo {
+  name: string;
+  ticker: string;
+  symbolX: string;
+  symbolY: string;
+  tokenA: string;
+  tokenB: string;
+  decimalsX: number;
+  decimalsY: number;
+  fullNameX: string;
+  fullNameY: string;
+  fee: string;
+  totalSupply: string;
+  px: string;
+  py: string;
+  denomination: string;
+}
+
 export type PoolAPIResponse = {
   PERMASWAP: Record<
     string,
@@ -9,7 +53,7 @@ export type PoolAPIResponse = {
       symbolY: string;
       fee: string;
       apr: number;
-      dexName: "PERMASWAP";
+      dexName: DEX.PERMASWAP;
       poolAddress: string;
       ticker: string;
       name: string;
@@ -24,7 +68,7 @@ export type PoolAPIResponse = {
       tokenB: string;
       fee: string;
       apr: number;
-      dexName: "BOTEGA";
+      dexName: DEX.BOTEGA;
       poolAddress: string;
       ticker: string;
       name: string;
@@ -35,7 +79,7 @@ export type PoolAPIResponse = {
 
 export type Pool = {
   processId: string;
-  dex: "PERMASWAP" | "BOTEGA";
+  dex: DEX;
   tokenA: { symbol: string; address: string; decimals: number };
   tokenB: { symbol: string; address: string; decimals: number };
   swapFeePct: number; // e.g. 0.003
@@ -46,4 +90,7 @@ export type Pool = {
   ticker: string;
 };
 
-
+export enum DEX{
+  PERMASWAP = "Permaswap",
+  BOTEGA = "Botega",
+}
