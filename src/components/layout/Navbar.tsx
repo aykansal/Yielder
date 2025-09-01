@@ -120,17 +120,15 @@ function WalletSection({
           <span className="text-sm font-medium">
             {shortenAddress(wallet.address)}
           </span>
-          <Link
+          <Button
+            variant="outline"
             aria-label="Open in explorer"
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[hsl(var(--primary-700))] text-[hsl(var(--primary-700))] transition-colors hover:bg-[hsl(var(--primary))]"
-            to={`https://viewblock.io/arweave/address/${wallet.address}`}
-            target="_blank"
-            rel="noreferrer"
+            onClick={() => window.open(`https://viewblock.io/arweave/address/${wallet.address}`, "_blank")}
           >
             <ExternalLink className="h-4 w-4" />
-          </Link>
+          </Button>
         </div>
-
         {/* Mobile wallet menu */}
         <div className="sm:hidden">
           <DropdownMenu>
@@ -167,5 +165,5 @@ function WalletSection({
     );
   }
 
-  return <ConnectButton profileModal={true} showBalance={true} />;
+  return <ConnectButton />;
 }

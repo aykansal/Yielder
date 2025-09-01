@@ -1,15 +1,9 @@
-// API functions for pool data, token balances, and token list
-
-import { connect, createSigner, dryrun } from "@permaweb/aoconnect";
+import { createSigner, dryrun } from "@permaweb/aoconnect";
 import { luaProcessId } from "./constants/index.constants";
 import { messageAR, readHandler } from "./arkit";
-import {
-  CU_URL,
-  GATEWAY_URL,
-  GRAPHQL_URL,
-  MODE,
-} from "@/lib/constants/arkit.constants";
-import { DEX } from "@/types/pool.types";
+import { DEX, PoolAPIResponse } from "@/types/pool.types";
+import { transfer } from "./token.pool";
+import { transformPoolData } from "./pools.utils";
 
 export interface PoolInfo {
   name: string;
@@ -18,17 +12,17 @@ export interface PoolInfo {
   symbolY: string;
   tokenA: string;
   tokenB: string;
-  // decimalsX: number;
-  // decimalsY: number;
-  // fullNameX: string;
-  // fullNameY: string;
+  decimalsX?: number;
+  decimalsY?: number;
+  fullNameX?: string;
+  fullNameY?: string;
   fee: string;
   totalSupply: string;
-  // px: string;
-  // py: string;
+  px?: string;
+  py?: string;
   denomination: string;
-  // disableSwap: boolean;
-  // disableLiquidity: boolean;
+  disableSwap?: boolean;
+  disableLiquidity?: boolean;
 }
 
 export interface TokenBalance {
@@ -98,17 +92,14 @@ export async function getPoolInfo(poolProcessId: string, dex: DEX): Promise<Pool
       fee: tagMap.Fee || tagMap.FeeBps || 'NA',
       totalSupply: tagMap.TotalSupply || 'NA',
       denomination: tagMap.Denomination || '12',
-
-      /* ---- available in Permaswap not in Botega ------
-      decimalsX: parseInt(tagMap.DecimalX || '12'),
-      decimalsY: parseInt(tagMap.DecimalY || '12'),
-      fullNameX: tagMap.FullNameX || '',
-      fullNameY: tagMap.FullNameY || '',
-      px: tagMap.PX || tagMap.px || '0',
-      py: tagMap.PY || '0',
-      disableSwap: tagMap.DisableSwap === 'true',
-      disableLiquidity: tagMap.DisableLiquidity === 'true',
-      */
+      decimalsX: tagMap.DecimalX ? parseInt(tagMap.DecimalX) : undefined,
+      decimalsY: tagMap.DecimalY ? parseInt(tagMap.DecimalY) : undefined,
+      fullNameX: tagMap.FullNameX || undefined,
+      fullNameY: tagMap.FullNameY || undefined,
+      px: tagMap.PX || tagMap.px || undefined,
+      py: tagMap.PY || tagMap.py || undefined,
+      disableSwap: tagMap.DisableSwap ? tagMap.DisableSwap === 'true' : undefined,
+      disableLiquidity: tagMap.DisableLiquidity ? tagMap.DisableLiquidity === 'true' : undefined,
     };
 
     // Debug: Log the final result object
@@ -179,7 +170,7 @@ export function findTokenBySymbol(tokens: Token[], symbol: string): Token | unde
   return tokens.find(token => token.symbol.toLowerCase() === symbol.toLowerCase());
 }
 
-export async function getAllPools() {
+export async function getAllPools(ao: any) {
   // const ao = connect({
   //   GATEWAY_URL,
   //   GRAPHQL_URL,
@@ -205,28 +196,50 @@ export async function getAllPools() {
   //   }
   // }
 
-  const res = await readHandler({
+  const res = await readHandler(ao, {
     action: "cronpooldata",
     process: luaProcessId,
-  });
+  }) as PoolAPIResponse;
+  const transformedPools = transformPoolData(res);
 
-  console.log("[api.ts] results:", res);
+  console.log("[api.ts] transformedPools:", transformedPools);
 
-  return res;
+  return transformedPools;
 }
 
 // Helper function to check if a pool exists for token pair
-export async function checkPoolExists(tokenAProcess: string, tokenBProcess: string): Promise<boolean> {
+export async function checkPoolExists(
+  ao: any,
+  tokenAProcess: string,
+  tokenBProcess: string
+): Promise<string | null> {
   try {
+    const res = await getAllPools(ao)
+    console.log(res)
+    if (!res || typeof res !== "object") {
+      console.warn("getAllPools did not return an object:", res)
+      return null
+    }
 
-    // const res = await getAllPools()
+    // Flatten: extract all pool objects into an array
+    const pools = Object.values(res).flatMap((dexPools: any) =>
+      Object.values(dexPools)
+    )
 
-    return true;
+    const pool = pools.find(
+      (pool: any) =>
+        (pool.tokenA === tokenAProcess && pool.tokenB === tokenBProcess) ||
+        (pool.tokenA === tokenBProcess && pool.tokenB === tokenAProcess)
+    )
+    console.log(pool)
+    // @ts-expect-error ignore
+    return pool ? pool.processId || pool.poolAddress : null
   } catch (error) {
-    console.error('Error checking pool existence:', error);
-    return false;
+    console.error("Error checking pool existence:", error)
+    return null
   }
 }
+
 
 // Helper function to format token amount with decimals
 export function formatTokenAmount(amount: string, decimals: number): string {
@@ -236,14 +249,8 @@ export function formatTokenAmount(amount: string, decimals: number): string {
 }
 
 // 4. Best Stake - Find best pool for token pair
-export async function getBestStake(tokenXProcess: string, tokenYProcess: string): Promise<any> {
+export async function getBestStake(ao: any, tokenXProcess: string, tokenYProcess: string): Promise<any> {
   try {
-    const ao = connect({
-      GATEWAY_URL,
-      GRAPHQL_URL,
-      MODE,
-      CU_URL,
-    });
     await ao.message({
       process: luaProcessId,
       signer: createSigner(window.arweaveWallet),
@@ -260,7 +267,7 @@ export async function getBestStake(tokenXProcess: string, tokenYProcess: string)
 
     await new Promise((resolve) => setTimeout(resolve, 10000));
 
-    const data = await messageAR({
+    const data = await messageAR(ao, {
       process: luaProcessId,
       tags: [{ name: "Action", value: "best-stake-user-response" }],
     }).then(async (messageId) => {
@@ -277,7 +284,110 @@ export async function getBestStake(tokenXProcess: string, tokenYProcess: string)
   }
 }
 
+interface TokenParam {
+  token: string
+  quantity: bigint
+}
 
-export const addLiquidity = async () => {
+export interface ProvideParams {
+  /** TokenA details */
+  tokenA: TokenParam
+  /** TokenB details */
+  tokenB: TokenParam
+  /** Pool process */
+  pool: string
+  /** Slippage tolerance percentage */
+  slippageTolerance: number
+}
+// TODO: Complete this function - missing imports and parameters
+export const addLiquidity = async (dex: DEX, ao: any, data: ProvideParams, onFirstTxSigned?: () => void) => {
+  const signer = createSigner(window.arweaveWallet)
 
+  // let poolTags = [
+    // { name: "X-Origin", value: "Yielder-DeX" },
+  // ]
+  // if (dex === DEX.BOTEGA) {
+  //   poolTags = [
+  //     { name: "X-Action", value: "Provide" },
+  //     { name: "X-Slippage-Tolerance", value: data.slippageTolerance.toString() },
+  //   ]
+
+  // }
+
+  const firstTransfer = await transfer(
+    {
+      ...data.tokenA,
+      recipient: "Pqho57bR_l8HHlf-2fAMYzvb1o73EP8RAPapGsv3aKA",
+      // tags: poolTags,
+    },
+    signer,
+    ao,
+  )
+
+  console.log("onFirstTransfer", firstTransfer)
+
+  onFirstTxSigned?.()
+
+  const secondTransfer = await transfer(
+    {
+      ...data.tokenB,
+      recipient: "Pqho57bR_l8HHlf-2fAMYzvb1o73EP8RAPapGsv3aKA",
+      // tags: poolTags,
+    },
+    signer,
+    ao,
+  )
+  console.log("onSecondTransfer", secondTransfer)
+
+  return [firstTransfer, secondTransfer]
+
+
+}
+
+
+interface StakeUserToken {
+  tokenA: {
+    token: string
+    quantity: any
+    reservePool: string
+  }
+  tokenB: {
+    token: string
+    quantity: any
+    reservePool: string
+  }
+  pool: string
+  totalLPSupplyOfTargetPool: string
+  activeWalletAddress: string
+}
+
+export const addLiquidityHandlerFn = (ao: any, data: StakeUserToken) => {
+
+  const signer = createSigner(window.arweaveWallet)
+
+  const msgTags = [
+    { name: "Action", value: "Stake-User-Token" },
+    { name: "Pool", value: data.pool },
+    { name: "User", value: data.activeWalletAddress },
+    { name: "TokenXAdrress", value: data.tokenA.token }, // wrong spelling of address
+    { name: "TokenXQuantity", value: data.tokenA.quantity },
+    { name: "TokenXReservePool", value: data.tokenA.reservePool },
+    { name: "TokenYAdrress", value: data.tokenB.token }, // wrong spelling of address
+    { name: "TokenYQuantity", value: data.tokenB.quantity },
+    { name: "TokenYReservePool", value: data.tokenB.reservePool },
+    { name: "TotalLPSupplyOfTargetPool", value: data.totalLPSupplyOfTargetPool },
+  ]
+
+  const result = ao.message({
+    process: luaProcessId,
+    signer,
+    tags: msgTags,
+  }).then(async (res) => {
+    return await ao.result({
+      process: luaProcessId,
+      message: res,
+    })
+  })
+
+  return result;
 }

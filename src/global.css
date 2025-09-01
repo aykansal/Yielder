@@ -159,7 +159,7 @@ layer(base);
 @layer utilities {
   /* Width of the scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
+    width: 3.2px;
   }
 
   /* Track (background) */

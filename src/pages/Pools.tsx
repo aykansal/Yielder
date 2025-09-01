@@ -27,17 +27,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-global-state";
+import { useAo } from "@/hooks/use-ao";
 import {
   airdropTokenOptions,
   luaProcessId,
 } from "@/lib/constants/index.constants";
-import {
-  getTokenList,
-  getBestStake,
-  findTokenByProcess,
-  type Token,
-  getAllPools,
-} from "@/lib/api";
+import { getTokenList, getBestStake, type Token, getAllPools } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -50,9 +45,8 @@ import {
 } from "@/components/ui/dialog";
 import { Gift } from "lucide-react";
 import { messageAR } from "@/lib/arkit";
-import { DEX, Pool, PoolAPIResponse } from "@/types/pool.types";
-import { transformPoolData, transformBestStakeData } from "@/lib/pools.utils";
-import { connect } from "@permaweb/aoconnect";
+import { DEX, Pool } from "@/types/pool.types";
+import { transformBestStakeData } from "@/lib/pools.utils";
 
 export default function Pools() {
   const [q, setQ] = useState("");
@@ -64,6 +58,7 @@ export default function Pools() {
   const [error, setError] = useState<string | null>(null);
   const nav = useNavigate();
   const { isAuthenticated, wallet } = useAuth();
+  const ao = useAo();
 
   // Best Stake state
   const [availableTokens, setAvailableTokens] = useState<Token[]>([]);
@@ -93,16 +88,10 @@ export default function Pools() {
         setUpdating(true);
       }
 
-      const res = (await getAllPools()) as PoolAPIResponse;
+      const allPools = await getAllPools(ao);
 
-      const transformedPools = transformPoolData(res);
-      // console.log("transformedPools", transformedPools);
-      setPools(transformedPools);
-      console.log(
-        "[pools.tsx] Loaded pools:",
-        transformedPools.length,
-        "pools",
-      );
+      setPools(allPools);
+      console.log("[pools.tsx] Loaded pools:", allPools.length, "pools");
     } catch (err) {
       setError("Failed to load pools. Please try again.");
       console.error("Pool refresh error:", err);
@@ -162,7 +151,11 @@ export default function Pools() {
       setBestStakeError(null);
       setBestStakePool(null);
       console.log(selectedTokenX, selectedTokenY);
-      const bestStakeData = await getBestStake(selectedTokenX, selectedTokenY);
+      const bestStakeData = await getBestStake(
+        ao,
+        selectedTokenX,
+        selectedTokenY,
+      );
 
       console.log("[pools.tsx] bestStakeData:", bestStakeData);
       if (bestStakeData) {
@@ -213,7 +206,7 @@ export default function Pools() {
         throw new Error("Please enter a valid quantity");
       }
 
-      const result = await messageAR({
+      const result = await messageAR(ao, {
         process: luaProcessId,
         tags: [
           {
@@ -227,7 +220,6 @@ export default function Pools() {
           { name: "Token", value: airdropForm.token },
         ],
       }).then(async (messageId) => {
-        const ao = connect({ MODE: "legacy" });
         const messageResult = await ao.result({
           process: luaProcessId,
           message: messageId,

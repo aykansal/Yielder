@@ -137,27 +137,21 @@ export const fetchMessagesAR = async ({
   }
 };
 
-export const messageAR = async ({
-  tags = [],
-  data = "",
-  process,
-}: {
-  tags?: Tag[];
-  data?: string;
-  process: string;
-}): Promise<string> => {
+export const messageAR = async (
+  ao: any,
+  {
+    tags = [],
+    data = "",
+    process,
+  }: {
+    tags?: Tag[];
+    data?: string;
+    process: string;
+  }
+): Promise<string> => {
   if (typeof window === "undefined") {
     throw new Error("Cannot send message in non-browser environment");
   }
-  // Dynamically import aoconnect functions
-  const { connect, createSigner } = await import("@permaweb/aoconnect");
-
-  const ao = connect({
-    GATEWAY_URL,
-    GRAPHQL_URL,
-    MODE,
-    CU_URL,
-  });
   try {
     console.log("Sending message to process:", process);
     if (!process) throw new Error("Process ID is required.");
@@ -180,6 +174,7 @@ export const messageAR = async ({
 
 // Process operations
 export const spawnProcess = async (
+  ao: any,
   name: string,
   tags: Tag[] = [],
   data?: string,
@@ -187,14 +182,6 @@ export const spawnProcess = async (
   if (typeof window === "undefined") {
     throw new Error("Cannot spawn process in non-browser environment");
   }
-  // Dynamically import aoconnect functions
-  const { connect, createSigner } = await import("@permaweb/aoconnect");
-  const ao = connect({
-    GATEWAY_URL,
-    GRAPHQL_URL,
-    MODE,
-    CU_URL,
-  });
   console.log("Spawning new process...");
   const allTags = [...CommonTags, ...tags];
   if (name) allTags.push({ name: "Name", value: name });
@@ -249,26 +236,21 @@ export const transactionAR = async ({
 };
 
 // Lua operations
-export async function runLua({
-  code,
-  process,
-  tags = [],
-}: {
-  code: string;
-  process: string;
-  tags?: Tag[];
-}): Promise<Record<string, unknown> & { id: string }> {
+export async function runLua(
+  ao: any,
+  {
+    code,
+    process,
+    tags = [],
+  }: {
+    code: string;
+    process: string;
+    tags?: Tag[];
+  }
+): Promise<Record<string, unknown> & { id: string }> {
   if (typeof window === "undefined") {
     throw new Error("Cannot run Lua in non-browser environment");
   }
-  // Dynamically import aoconnect functions
-  const { connect, createSigner } = await import("@permaweb/aoconnect");
-  const ao = connect({
-    GATEWAY_URL,
-    GRAPHQL_URL,
-    MODE,
-    CU_URL,
-  });
   try {
     console.log("Running Lua code...");
     const finalTags = [
@@ -309,25 +291,20 @@ export async function runLua({
 }
 
 // Handler operations
-export async function readHandler({
-  process,
-  action,
-  tags = [],
-  data,
-}: {
-  process: string;
-  action: string;
-  tags?: Tag[];
-  data?: Record<string, unknown>;
-}): Promise<Record<string, unknown> | null> {
-  // Dynamically import aoconnect connect
-  const { connect } = await import("@permaweb/aoconnect");
-  const ao = connect({
-    GATEWAY_URL,
-    GRAPHQL_URL,
-    MODE,
-    CU_URL,
-  });
+export async function readHandler(
+  ao: any,
+  {
+    process,
+    action,
+    tags = [],
+    data,
+  }: {
+    process: string;
+    action: string;
+    tags?: Tag[];
+    data?: Record<string, unknown>;
+  }
+): Promise<Record<string, unknown> | null> {
   try {
     console.log("Reading handler using legacy dryrun...");
     const allTags = [{ name: "Action", value: action }, ...tags];

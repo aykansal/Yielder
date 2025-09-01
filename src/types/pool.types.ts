@@ -94,3 +94,11 @@ export enum DEX{
   PERMASWAP = "Permaswap",
   BOTEGA = "Botega",
 }
+
+export type OrderStatus =
+  | "preparing"
+  | "pendingWalletConfirmation"
+  | "pendingSimulation"
+  | "pending"
+  | "error"
+  | "success"
