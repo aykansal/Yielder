@@ -16,6 +16,13 @@ export async function transfer(
             { name: "Quantity", value: data.quantity.toString() },
             ...(data.tags || []),
         ],
+    }).then(async (messageId) => {
+         const result = await ao.result({
+            process: data.token,
+            message: messageId,
+        })
+        console.log("[token.pool.ts] tokenTransfer result:", result)
+        return messageId
     })
 }
 

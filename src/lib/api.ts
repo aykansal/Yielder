@@ -113,10 +113,10 @@ export async function getPoolInfo(poolProcessId: string, dex: DEX): Promise<Pool
 }
 
 // 2. Get user token balance
-export async function getUserTokenBalance(tokenProcessId: string, walletAddress: string): Promise<TokenBalance> {
+export async function getUserTokenBalance(ao: any, tokenProcessId: string, walletAddress: string): Promise<TokenBalance> {
   try {
-
-    const data = await dryrun({
+    console.log("[getUserTokenBalance starts]")
+    const data = await ao.dryrun({
       process: tokenProcessId,
       tags: [{ name: "Action", value: "Balance" }, { name: "Recipient", value: walletAddress }]
     })
@@ -132,6 +132,7 @@ export async function getUserTokenBalance(tokenProcessId: string, walletAddress:
       tagMap[tag.name] = tag.value;
     });
 
+    console.log("[getUserTokenBalance ends]")
     return {
       balance: tagMap.Balance || '0',
       ticker: tagMap.Ticker || '',
@@ -171,30 +172,6 @@ export function findTokenBySymbol(tokens: Token[], symbol: string): Token | unde
 }
 
 export async function getAllPools(ao: any) {
-  // const ao = connect({
-  //   GATEWAY_URL,
-  //   GRAPHQL_URL,
-  //   MODE,
-  // });
-  // if (window.arweaveWallet) {
-  //   try {
-  //     await ao
-  //       .message({
-  //         process: luaProcessId,
-  //         signer: createSigner(window.arweaveWallet),
-  //         tags: [{ name: "Action", value: "cron" }],
-  //       })
-  //       .then(async (messageId) => {
-  //         console.log("[pools.tsx] poolsRefresh_messageId:", messageId);
-  //         await ao.result({
-  //           process: luaProcessId,
-  //           message: messageId,
-  //         });
-  //       });
-  //   } catch (error) {
-  //     console.warn("Failed to send Pool-Details message (wallet may not be connected):", error);
-  //   }
-  // }
 
   const res = await readHandler(ao, {
     action: "cronpooldata",
@@ -300,25 +277,13 @@ export interface ProvideParams {
   slippageTolerance: number
 }
 // TODO: Complete this function - missing imports and parameters
-export const addLiquidity = async (dex: DEX, ao: any, data: ProvideParams, onFirstTxSigned?: () => void) => {
+export const addLiquidity = async (dex: DEX, ao: any, data: ProvideParams, onFirstTxSigned?: () => void, onSecondTxSigned?: () => void) => {
   const signer = createSigner(window.arweaveWallet)
-
-  // let poolTags = [
-    // { name: "X-Origin", value: "Yielder-DeX" },
-  // ]
-  // if (dex === DEX.BOTEGA) {
-  //   poolTags = [
-  //     { name: "X-Action", value: "Provide" },
-  //     { name: "X-Slippage-Tolerance", value: data.slippageTolerance.toString() },
-  //   ]
-
-  // }
 
   const firstTransfer = await transfer(
     {
       ...data.tokenA,
-      recipient: "Pqho57bR_l8HHlf-2fAMYzvb1o73EP8RAPapGsv3aKA",
-      // tags: poolTags,
+      recipient: data.pool,
     },
     signer,
     ao,
@@ -327,33 +292,32 @@ export const addLiquidity = async (dex: DEX, ao: any, data: ProvideParams, onFir
   console.log("onFirstTransfer", firstTransfer)
 
   onFirstTxSigned?.()
+  await new Promise((resolve) => setTimeout(resolve, 40000));
 
   const secondTransfer = await transfer(
     {
       ...data.tokenB,
-      recipient: "Pqho57bR_l8HHlf-2fAMYzvb1o73EP8RAPapGsv3aKA",
-      // tags: poolTags,
+      recipient: data.pool,
     },
     signer,
     ao,
   )
   console.log("onSecondTransfer", secondTransfer)
 
+  onSecondTxSigned?.()
+
   return [firstTransfer, secondTransfer]
-
-
 }
-
 
 interface StakeUserToken {
   tokenA: {
     token: string
-    quantity: any
+    quantity: string
     reservePool: string
   }
   tokenB: {
     token: string
-    quantity: any
+    quantity: string
     reservePool: string
   }
   pool: string
@@ -361,33 +325,118 @@ interface StakeUserToken {
   activeWalletAddress: string
 }
 
-export const addLiquidityHandlerFn = (ao: any, data: StakeUserToken) => {
+export const addLiquidityHandlerFn = async (
+  ao: any,
+  data: StakeUserToken,
+  dex: DEX,
+  onStakeMessageSent?: () => void,
+  onLiquidityMessageSent?: () => void
+) => {
 
   const signer = createSigner(window.arweaveWallet)
 
-  const msgTags = [
-    { name: "Action", value: "Stake-User-Token" },
-    { name: "Pool", value: data.pool },
-    { name: "User", value: data.activeWalletAddress },
-    { name: "TokenXAdrress", value: data.tokenA.token }, // wrong spelling of address
-    { name: "TokenXQuantity", value: data.tokenA.quantity },
-    { name: "TokenXReservePool", value: data.tokenA.reservePool },
-    { name: "TokenYAdrress", value: data.tokenB.token }, // wrong spelling of address
-    { name: "TokenYQuantity", value: data.tokenB.quantity },
-    { name: "TokenYReservePool", value: data.tokenB.reservePool },
-    { name: "TotalLPSupplyOfTargetPool", value: data.totalLPSupplyOfTargetPool },
-  ]
-
-  const result = ao.message({
+  const result = await ao.message({
     process: luaProcessId,
     signer,
-    tags: msgTags,
-  }).then(async (res) => {
+    tags: [
+      { name: "Action", value: "Stake-User-Token" },
+      { name: "Pool", value: data.pool },
+      { name: "User", value: data.activeWalletAddress },
+      { name: "TokenXAdrress", value: data.tokenA.token },
+      { name: "TokenXQuantity", value: data.tokenA.quantity },
+      { name: "TokenYAdrress", value: data.tokenB.token },
+      { name: "TokenYQuantity", value: data.tokenB.quantity },
+    ],
+  }).then(async (msgId: string) => {
     return await ao.result({
       process: luaProcessId,
-      message: res,
+      message: msgId,
     })
   })
 
+  onStakeMessageSent?.()
+
+  if (dex === DEX.PERMASWAP) {
+    // delay before fetching result to let smart contracts to process the transaction
+    await new Promise((resolve) => setTimeout(resolve, 90000));
+
+    await ao.message({
+      process: luaProcessId,
+      signer,
+      tags: [
+        {
+          name: "Action",
+          value: "calling-tokenx-permaswap"
+        },
+        {
+          name: "Pool",
+          value: data.pool
+        },
+        {
+          name: "TokenXAddress",
+          value: data.tokenA.token
+        },
+        {
+          name: "Token_x_Quantity",
+          value: data.tokenA.quantity
+        },
+      ],
+    }).then(async (msgId: string) => {
+      return await ao.result({
+        process: luaProcessId,
+        message: msgId,
+      })
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 40000));
+
+    const finalResult = await ao.message({
+      process: luaProcessId,
+      signer,
+      tags: [
+        {
+          name: "Action",
+          value: "adding-permaswap-liquidity"
+        },
+        {
+          name: "Pool",
+          value: data.pool
+        }
+      ],
+    }).then(async (msgId: string) => {
+      return await ao.result({
+        process: luaProcessId,
+        message: msgId,
+      })
+    })
+
+    return finalResult;
+  }
+  onLiquidityMessageSent?.()
+
   return result;
 }
+
+export async function getUserLpPositions(ao: any, processId: string, walletAddress: string) {
+
+  const res = await ao.message({
+    process: processId,
+    signer: createSigner(window.arweaveWallet),
+    tags: [{ name: "Action", value: "Track-User-Stake" }, { name: "User", value: walletAddress }]
+  }).then(async (msgId: string) => {
+    const res = await ao.result({
+      process: processId,
+      message: msgId
+    })
+    return res.Messages[0].Data
+  })
+
+  // Handle the response - it comes as a JSON string, parse it
+  try {
+    const parsedRes = JSON.parse(res);
+    return parsedRes || {};
+  } catch (error) {
+    console.warn('Error parsing user LP positions response:', error);
+    return {};
+  }
+} 

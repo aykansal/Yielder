@@ -526,7 +526,7 @@ export default function Pools() {
                     </TableCell>
                     <TableCell>
                       {bestStakePool.aprPct > 0 ? (
-                        <span className="inline-flex items-center rounded-full bg-green-500/10 px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400">
+                        <span className="inline-flex items-center rounded-full bg-green-500 px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400">
                           {bestStakePool.aprPct.toFixed(2)}%
                         </span>
                       ) : (
@@ -756,11 +756,6 @@ export default function Pools() {
                     <div className="text-xs text-muted-foreground">
                       {p.contract.slice(0, 6)}…{p.contract.slice(-4)}
                     </div>
-                    {!isAuthenticated && (
-                      <div className="text-xs text-muted-foreground">
-                        (Connect wallet to interact)
-                      </div>
-                    )}
                   </TableCell>
                   <TableCell>
                     <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400">

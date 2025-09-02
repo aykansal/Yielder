@@ -1,7 +1,7 @@
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
@@ -15,7 +15,16 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, PlusCircle, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Circle,
+  Copy,
+  Loader2,
+  PlusCircle,
+  RefreshCw,
+  XCircle,
+} from "lucide-react";
 import { formatTokenAmount as formatAmount } from "@/lib/helpers.utils";
 import {
   getPoolInfo,
@@ -35,7 +44,13 @@ import { clampDecimals, ValueSkeleton } from "@/components/liquidity/shared";
 import { DEX, OrderStatus } from "@/types/pool.types";
 import { useAo } from "@/hooks/use-ao";
 import { ConnectButton } from "@arweave-wallet-kit/react";
-import { poolTokensExchangeRates } from "@/lib/constants/index.constants";
+import {
+  luaProcessId,
+  poolTokensExchangeRates,
+} from "@/lib/constants/index.constants";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const LiquidityPage = () => {
   const location = useLocation();
@@ -102,6 +117,32 @@ export function LiquidityComponent({
   const [orderStatus, setOrderStatus] = useState<OrderStatus>();
   const [isBackgroundUpdating, setIsBackgroundUpdating] = useState(false);
 
+  // Transfer process state
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [transferStep, setTransferStep] = useState<
+    | "idle"
+    | "first_transfer"
+    | "second_transfer"
+    | "stake_message"
+    | "liquidity_message"
+    | "complete"
+    | "error"
+  >("idle");
+
+  // Processing timeline configuration (in milliseconds)
+  // BOTEGA: 3 steps - first_transfer → second_transfer → liquidity_message
+  // PERMASWAP: 4 steps - first_transfer → second_transfer → stake_message → liquidity_message
+  const PROCESSING_TIMELINE = {
+    PERMASWAP: {
+      stake_message: 90000, // 1.5 minutes - Smart contract processing time
+      liquidity_message: 30000, // 30 seconds - Final confirmation
+    },
+    BOTEGA: {
+      liquidity_message: 30000, // 30 seconds - Direct to final step
+    },
+  };
+  const [transferError, setTransferError] = useState<string | null>(null);
+
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
@@ -138,10 +179,12 @@ export function LiquidityComponent({
           setTokenB(foundTokenB);
         } else {
           setError("Pool tokens not found in token list");
+          toast.error("Pool tokens not found. Please reload the page.");
         }
       } catch (err) {
         console.error("Error loading liquidity data:", err);
         setError("Failed to load pool data");
+        toast.error("Error loading pool data. Please reload the page.");
       } finally {
         setLoading(false);
       }
@@ -166,8 +209,8 @@ export function LiquidityComponent({
       // Refresh token balances if wallet is connected
       if (wallet?.address && tokenA && tokenB) {
         const [balanceA, balanceB] = await Promise.all([
-          getUserTokenBalance(tokenA.process, wallet.address),
-          getUserTokenBalance(tokenB.process, wallet.address),
+          getUserTokenBalance(ao, tokenA.process, wallet.address),
+          getUserTokenBalance(ao, tokenB.process, wallet.address),
         ]);
         setTokenABalance(balanceA.balance);
         setTokenBBalance(balanceB.balance);
@@ -175,7 +218,11 @@ export function LiquidityComponent({
 
       // Refresh LP token balance if wallet is connected
       if (wallet?.address) {
-        const lpBalance = await getUserTokenBalance(processId, wallet.address);
+        const lpBalance = await getUserTokenBalance(
+          ao,
+          processId,
+          wallet.address,
+        );
         setLpTokenBalance(lpBalance.balance);
       }
     } catch (err) {
@@ -186,68 +233,49 @@ export function LiquidityComponent({
     }
   };
 
-  // Background cron to refresh data every 20 seconds
-  // useEffect(() => {
-  //   if (!processId) return;
+  const loadAllBalances = async () => {
+    if (!wallet?.address || loadingBalances) return;
 
-  //   const intervalId = setInterval(() => {
-  //     refreshData();
-  //   }, 12000); // 20 seconds
-
-  //   // Cleanup interval on unmount or processId change
-  //   return () => clearInterval(intervalId);
-  // }, [processId, wallet?.address, tokenA, tokenB, isBackgroundUpdating]);
-
-  // Load token balances and LP balance when wallet becomes available
-  useEffect(() => {
-    const loadBalancesWhenWalletReady = async () => {
-      if (wallet?.address && processId && !loadingBalances) {
-        await loadLPTokenBalance(wallet.address);
-      }
-      if (wallet?.address && tokenA && tokenB && !loadingBalances) {
-        await loadTokenBalances(tokenA, tokenB, wallet.address);
-      }
-    };
-
-    loadBalancesWhenWalletReady();
-  }, [wallet?.address, tokenA, tokenB, processId]);
-
-  // Load token balances
-  const loadTokenBalances = async (
-    tokenA: Token,
-    tokenB: Token,
-    walletAddress: string,
-  ) => {
     try {
       setLoadingBalances(true);
-      const [balanceA, balanceB] = await Promise.all([
-        getUserTokenBalance(tokenA.process, walletAddress),
-        getUserTokenBalance(tokenB.process, walletAddress),
-      ]);
 
-      setTokenABalance(balanceA.balance);
-      setTokenBBalance(balanceB.balance);
+      // Load token balances if tokens are available
+      if (tokenA && tokenB) {
+        const [balanceA, balanceB] = await Promise.all([
+          getUserTokenBalance(ao, tokenA.process, wallet.address),
+          getUserTokenBalance(ao, tokenB.process, wallet.address),
+        ]);
+        setTokenABalance(balanceA.balance);
+        setTokenBBalance(balanceB.balance);
+      }
+
+      // Load LP token balance
+      if (processId) {
+        const lpBalance = await getUserTokenBalance(
+          ao,
+          processId,
+          wallet.address,
+        );
+        setLpTokenBalance(lpBalance.balance);
+      }
     } catch (err) {
-      console.error("Error loading token balances:", err);
+      console.error("Error loadin g balances:", err);
       toast.error("Failed to load token balances");
     } finally {
       setLoadingBalances(false);
     }
   };
 
-  // Load LP token balance
-  const loadLPTokenBalance = async (walletAddress: string) => {
-    try {
-      setLoadingBalances(true);
-      const lpBalance = await getUserTokenBalance(processId, walletAddress);
-      setLpTokenBalance(lpBalance.balance);
-    } catch (err) {
-      console.error("Error loading LP token balance:", err);
-      setLpTokenBalance("0");
-    } finally {
-      setLoadingBalances(false);
-    }
-  };
+  // Load token balances and LP balance when wallet becomes available
+  useEffect(() => {
+    const loadBalancesWhenWalletReady = async () => {
+      if (wallet?.address && !loadingBalances) {
+        await loadAllBalances();
+      }
+    };
+
+    loadBalancesWhenWalletReady();
+  }, [wallet?.address, tokenA, tokenB, processId]);
 
   // Calculate price ratio using hardcoded exchange rates
   const priceAtoB = useMemo(() => {
@@ -412,10 +440,12 @@ export function LiquidityComponent({
       // Navigate to new pool
       navigate(`/liquidity?${newSearchParams.toString()}`);
 
-      // Load balance for new token if wallet connected
+      // Load balances for new pool if wallet connected
       if (wallet?.address) {
         try {
+          // Load balance for the new token specifically
           const balance = await getUserTokenBalance(
+            ao,
             newToken.process,
             wallet.address,
           );
@@ -434,142 +464,245 @@ export function LiquidityComponent({
     }
   };
 
-  const [firstTxSigned, setFirstTxSigned] = useState(false);
-  let firstTxAccepted = false;
+  // Helper function for BOTEGA liquidity addition (3 steps)
+  const addLiquidityBotega = async () => {
+    console.log("[BOTEGA] Starting 3-step liquidity addition process");
 
-  const handleAddLiquidity = async () => {
-    console.log(poolInfo);
-    setOpenConfirmAdd(false);
-    toast.success("Liquidity added");
-    setAmountA("");
-    setAmountB("");
-
-    try {
-      const [firstTransfer, secondTransfer] = await addLiquidity(
-        dex,
-        ao,
-        {
-          tokenA: {
-            token: tokenA.process as string,
-            quantity: BigInt(Math.floor(vA * Math.pow(10, tokenA.decimals))),
-          },
-          tokenB: {
-            token: tokenB.process as string,
-            quantity: BigInt(Math.floor(vB * Math.pow(10, tokenB.decimals))),
-          },
-          pool: processId,
-          slippageTolerance: 0.5,
+    setTransferStep("first_transfer");
+    const [firstTransfer, secondTransfer] = await addLiquidity(
+      dex,
+      ao,
+      {
+        tokenA: {
+          token: tokenA.process as string,
+          quantity: BigInt(Math.floor(vA * Math.pow(10, tokenA.decimals))),
         },
-        () => {
-          setFirstTxSigned(true);
-          firstTxAccepted = true;
+        tokenB: {
+          token: tokenB.process as string,
+          quantity: BigInt(Math.floor(vB * Math.pow(10, tokenB.decimals))),
         },
-      );
-      console.log("onOrderId", [firstTransfer, secondTransfer]);
-      setOrderStatus("pending");
+        pool: luaProcessId,
+        slippageTolerance: 0.5,
+      },
+      () => {
+        setTransferStep("second_transfer");
+      },
+      () => {
+        setTransferStep("liquidity_message");
+      },
+    );
 
-      await new Promise((resolve) => setTimeout(resolve, 16500)); // add delay before fetching result to let smart contracts to process the transaction
+    console.log(
+      "[BOTEGA] Both transfers completed, proceeding to liquidity message",
+    );
 
-      const finalResult = await addLiquidityHandlerFn(ao, {
+    await new Promise((resolve) =>
+      setTimeout(resolve, PROCESSING_TIMELINE.BOTEGA.liquidity_message),
+    );
+
+    const finalResult = await addLiquidityHandlerFn(
+      ao,
+      {
         pool: processId,
         tokenA: {
           token: tokenA.process as string,
-          quantity: BigInt(Math.floor(vA * Math.pow(10, tokenA.decimals))).toString(),
+          quantity: vA.toString(),
           reservePool: poolInfo.px,
         },
         tokenB: {
           token: tokenB.process as string,
-          quantity: BigInt(Math.floor(vB * Math.pow(10, tokenB.decimals))).toString(),
+          quantity: vB.toString(),
           reservePool: poolInfo.py,
         },
         activeWalletAddress: wallet.address,
         totalLPSupplyOfTargetPool: poolInfo?.totalSupply,
-      });
-      console.log(finalResult);
-    } catch (error) {
-      console.error("Error adding liquidity:", error);
-      toast.error("Error adding liquidity, Try Again!!");
-    }
+      },
+      dex,
+      () => {
+        setTransferStep("liquidity_message");
+      },
+      () => {
+        setTransferStep("complete");
+      },
+    );
 
-    console.log("handleAddLiquidity");
+    console.log("[BOTEGA] Liquidity addition completed");
+    return finalResult;
   };
 
-  // Show error state
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-red-600 mb-4">{error}</div>
-          <Button onClick={() => window.location.reload()} variant="outline">
-            Retry
-          </Button>
-        </div>
-      </div>
+  // Helper function for PERMASWAP liquidity addition (4 steps)
+  const addLiquidityPermaswap = async () => {
+    console.log("[PERMASWAP] Starting 4-step liquidity addition process");
+
+    setTransferStep("first_transfer");
+    const [firstTransfer, secondTransfer] = await addLiquidity(
+      dex,
+      ao,
+      {
+        tokenA: {
+          token: tokenA.process as string,
+          quantity: BigInt(Math.floor(vA * Math.pow(10, tokenA.decimals))),
+        },
+        tokenB: {
+          token: tokenB.process as string,
+          quantity: BigInt(Math.floor(vB * Math.pow(10, tokenB.decimals))),
+        },
+        pool: luaProcessId,
+        slippageTolerance: 0.5,
+      },
+      () => {
+        setTransferStep("second_transfer");
+      },
+      () => {
+        setTransferStep("stake_message");
+      },
     );
-  }
+
+    console.log(
+      "[PERMASWAP] Both transfers completed, proceeding to stake message",
+    );
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, PROCESSING_TIMELINE.PERMASWAP.stake_message),
+    );
+    let finalResult;
+    try {
+      finalResult = await addLiquidityHandlerFn(
+        ao,
+        {
+          pool: processId,
+          tokenA: {
+            token: tokenA.process as string,
+            quantity: Math.floor(vA * Math.pow(10, tokenA.decimals)).toString(),
+            reservePool: poolInfo.px,
+          },
+          tokenB: {
+            token: tokenB.process as string,
+            quantity: Math.floor(vB * Math.pow(10, tokenB.decimals)).toString(),
+            reservePool: poolInfo.py,
+          },
+          activeWalletAddress: wallet.address,
+          totalLPSupplyOfTargetPool: poolInfo?.totalSupply,
+        },
+        dex,
+        () => {
+          setTransferStep("liquidity_message");
+        },
+        () => {
+          setTransferStep("complete");
+        },
+      );
+      console.log("[PERMASWAP] Liquidity addition completed");
+      return finalResult;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleAddLiquidity = async () => {
+    console.log(poolInfo);
+
+    // Reset transfer state
+    setIsTransferring(true);
+    setTransferStep("first_transfer");
+    setTransferError(null);
+
+    try {
+      let finalResult: any;
+
+      if (dex === DEX.BOTEGA) {
+        finalResult = await addLiquidityBotega();
+      } else {
+        finalResult = await addLiquidityPermaswap();
+      }
+
+      console.log("Final result:", finalResult);
+      setOrderStatus("success");
+
+      setTimeout(() => {
+        setOpenConfirmAdd(false);
+        setIsTransferring(false);
+        setTransferStep("idle");
+        toast.success("Liquidity added successfully!");
+        setAmountA("");
+        setAmountB("");
+        refreshData();
+      }, 2000);
+    } catch (error) {
+      console.error("Error adding liquidity:", error);
+      setTransferStep("error");
+      setTransferError(
+        error instanceof Error ? error.message : "Unknown error occurred",
+      );
+      setOrderStatus("error");
+
+      toast.error("Error adding liquidity. Please try again.");
+    }
+  };
 
   return (
-    <div className="min-hscreen flex flex-col">
-      <div className="flex-1 flex items-center justify-center pb-4">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 flex items-center justify-center pb-4 px-4">
         <div className="w-full max-w-md">
-          <div className="mb-6 flex items-center gap-2">
+          <div className="mb-4 sm:mb-6 flex items-center gap-2">
             <ArrowLeft
               onClick={() => {
-                window.location.href = "/";
+                window.history.back();
               }}
+              className="h-5 w-5 sm:h-6 sm:w-6"
             />
-            <h1 className="text-2xl font-semibold">Liquidity</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold">Liquidity</h1>
           </div>
 
-          <div className="rounded-[16px] border bg-card p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)] mb-4">
-            <div className="flex items-center justify-between gap-4 text-sm">
-              <div>
+          <div className="rounded-[16px] border bg-card p-3 sm:p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)] mb-4">
+            <div className="grid grid-cols-[1fr_auto] items-start gap-3 sm:gap-4 text-sm">
+              {/* Left section */}
+              <div className="space-y-1 min-w-0">
                 <div className="font-semibold flex items-center gap-2">
                   {poolInfo ? (
-                    `${poolInfo.symbolX} / ${poolInfo.symbolY}`
+                    <span className="truncate text-sm sm:text-base">
+                      {poolInfo.symbolX} / {poolInfo.symbolY}
+                    </span>
                   ) : (
-                    <ValueSkeleton className="h-5 w-32" />
+                    <Skeleton className="h-5 w-24 sm:w-32" />
                   )}
                   {isBackgroundUpdating && (
-                    <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+                    <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground flex-shrink-0" />
                   )}
                   <Copy
-                    className="cursor-pointer h-3 w-3 text-muted-foreground hover:text-foreground"
+                    className="cursor-pointer h-3 w-3 text-muted-foreground hover:text-foreground flex-shrink-0"
                     onClick={() => {
                       window.navigator.clipboard.writeText(processId);
                       toast.success("Copied to clipboard");
                     }}
                   />
                 </div>
-                <div className="text-muted-foreground">
-                  My Liquidity:{" "}
-                  {poolInfo ? (
-                    wallet?.address ? (
-                      parseFloat(lpTokenBalance) > 0 ? (
-                        `${formatLPTokenAmount(lpTokenBalance)} LP`
-                      ) : (
-                        "0 LP"
-                      )
+                <div className="text-muted-foreground flex items-baseline gap-2">
+                  <span className="text-xs sm:text-sm whitespace-nowrap">
+                    My Liquidity:
+                  </span>
+                  {poolInfo && wallet?.address ? (
+                    parseFloat(lpTokenBalance) > 0 ? (
+                      <span className="text-xs sm:text-sm">
+                        {formatLPTokenAmount(lpTokenBalance)} LP
+                      </span>
                     ) : (
-                      "NA"
+                      <span className="text-xs sm:text-sm">0 LP</span>
                     )
                   ) : (
-                    <ValueSkeleton className="h-5 w-10" />
+                    <Skeleton className="h-4 w-8 sm:w-12" />
                   )}
                 </div>
               </div>
-              <div className="flex items-start gap-2">
-                {/* <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
-                  APR{" "}
-                  {poolInfo ? "TBD" : <ValueSkeleton className="h-5 w-32" />}%
-                </span> */}
-                <span className="rounded-full border px-2 py-1 text-xs text-muted-foreground">
-                  {poolInfo ? (
-                    `${(parseFloat(poolInfo.fee) / 100).toFixed(2)}% fee`
-                  ) : (
-                    <ValueSkeleton className="h-4 w-12" />
-                  )}
-                </span>
+
+              {/* Right section */}
+              <div className="rounded-full border px-2 py-1 text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0">
+                {poolInfo ? (
+                  `${poolInfo ? (parseFloat(poolInfo.fee) / 100).toFixed(2) : "NA"}%`
+                ) : (
+                  <Skeleton className="h-4 w-6 sm:w-8" />
+                )}
+                {" fee"}
               </div>
             </div>
           </div>
@@ -663,7 +796,19 @@ export function LiquidityComponent({
                   </div>
                   <Dialog
                     open={openConfirmAdd}
-                    onOpenChange={setOpenConfirmAdd}
+                    onOpenChange={(open) => {
+                      // Prevent closing modal during transfer process
+                      if (
+                        isTransferring &&
+                        (transferStep === "first_transfer" ||
+                          transferStep === "second_transfer" ||
+                          transferStep === "stake_message" ||
+                          transferStep === "liquidity_message")
+                      ) {
+                        return; // Don't allow closing during active transfer
+                      }
+                      setOpenConfirmAdd(open);
+                    }}
                   >
                     <ProtectedRoute
                       fallback={<ConnectButton className="text-black" />}
@@ -674,46 +819,346 @@ export function LiquidityComponent({
                         </Button>
                       </DialogTrigger>
                     </ProtectedRoute>
-                    <DialogContent className="rounded-[16px]">
-                      <DialogHeader>
-                        <DialogTitle>Confirm Add Liquidity</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Token A</span>
-                          <span className="font-medium">
-                            {formatAmount(vA)} {tokenA?.symbol || ""}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Token B</span>
-                          <span className="font-medium">
-                            {formatAmount(vB)} {tokenB?.symbol || ""}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            Fee tier
-                          </span>
-                          <span className="font-medium">1.00%</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">
-                            Est. LP tokens
-                          </span>
-                          <span className="font-medium">
-                            {Math.sqrt(vA * vB).toFixed(6)} LP
-                          </span>
-                        </div>
+                    <DialogContent className="rounded-2xl p-0 overflow-hidden border bg-white max-w-md sm:max-w-lg md:max-w-2xl mx-auto">
+                      {/* Header */}
+                      <div className="border-b bg-white">
+                        <DialogHeader className="px-4 py-3 sm:px-6">
+                          <DialogTitle className="text-balance text-lg sm:text-xl font-semibold text-neutral-900">
+                            {isTransferring
+                              ? "Processing Liquidity Addition"
+                              : "Confirm Add Liquidity"}
+                          </DialogTitle>
+                        </DialogHeader>
                       </div>
-                      <DialogFooter>
-                        <Button
-                          onClick={handleAddLiquidity}
-                          className="min-w-28"
-                        >
-                          Confirm
-                        </Button>
-                      </DialogFooter>
+
+                      {/* Helpers: steps + progress */}
+                      {(() => {
+                        const hasStakeStep = dex !== DEX.BOTEGA;
+                        const steps = [
+                          {
+                            id: "first_transfer" as const,
+                            label: `Transfer ${tokenA?.symbol || "Token A"}`,
+                            sub: `${formatAmount(vA)} ${tokenA?.symbol || ""}`,
+                          },
+                          {
+                            id: "second_transfer" as const,
+                            label: `Transfer ${tokenB?.symbol || "Token B"}`,
+                            sub: `${formatAmount(vB)} ${tokenB?.symbol || ""}`,
+                          },
+                          ...(hasStakeStep
+                            ? [
+                                {
+                                  id: "stake_message" as const,
+                                  label: "Staking",
+                                  sub: `Processing stake (~${
+                                    PROCESSING_TIMELINE.PERMASWAP
+                                      .stake_message / 1000
+                                  }s)`,
+                                },
+                              ]
+                            : []),
+                          {
+                            id: "liquidity_message" as const,
+                            label: "Adding Liquidity",
+                            sub: `Finalizing (~${
+                              PROCESSING_TIMELINE[
+                                dex === DEX.BOTEGA ? "BOTEGA" : "PERMASWAP"
+                              ].liquidity_message / 1000
+                            }s)`,
+                          },
+                        ];
+
+                        type StepId = (typeof steps)[number]["id"];
+                        const order: Record<
+                          StepId | "complete" | "error" | "idle",
+                          number
+                        > = {
+                          first_transfer: 0,
+                          second_transfer: 1,
+                          stake_message: hasStakeStep ? 2 : 999,
+                          liquidity_message: hasStakeStep ? 3 : 2,
+                          complete: 9999,
+                          error: 9998,
+                          idle: -1,
+                        };
+
+                        const currentIdx =
+                          transferStep === "complete"
+                            ? steps.length - 1
+                            : transferStep === "error"
+                              ? steps.findIndex(
+                                  (s) => s.id === "liquidity_message",
+                                )
+                              : steps.findIndex(
+                                  (s) => s.id === (transferStep as StepId),
+                                );
+
+                        const completedCount =
+                          transferStep === "complete"
+                            ? steps.length
+                            : Math.max(0, currentIdx); // steps strictly before current are "completed"
+                        const total = steps.length;
+                        const progress =
+                          transferStep === "complete"
+                            ? 100
+                            : Math.round((completedCount / total) * 100);
+
+                        const statusFor = (id: StepId) => {
+                          if (
+                            transferStep === "error" &&
+                            id === "liquidity_message"
+                          )
+                            return "failed";
+                          if (transferStep === "complete") return "complete";
+                          if (id === transferStep) return "processing";
+                          return order[id] < currentIdx
+                            ? "complete"
+                            : "waiting";
+                        };
+
+                        const StatusBadge = ({
+                          s,
+                        }: {
+                          s: "processing" | "complete" | "waiting" | "failed";
+                        }) => {
+                          const map = {
+                            processing:
+                              "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200",
+                            complete:
+                              "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
+                            waiting:
+                              "bg-neutral-50 text-neutral-600 ring-1 ring-inset ring-neutral-200",
+                            failed:
+                              "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200",
+                          };
+                          const label =
+                            s === "processing"
+                              ? "Processing"
+                              : s === "complete"
+                                ? "Complete"
+                                : s === "failed"
+                                  ? "Failed"
+                                  : "Waiting";
+                          return (
+                            <span
+                              className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${map[s]}`}
+                            >
+                              {label}
+                            </span>
+                          );
+                        };
+
+                        const StepIcon = ({
+                          s,
+                        }: {
+                          s: "processing" | "complete" | "waiting" | "failed";
+                        }) => {
+                          if (s === "processing")
+                            return (
+                              <Loader2
+                                className="h-5 w-5 text-blue-600 animate-spin"
+                                aria-hidden="true"
+                              />
+                            );
+                          if (s === "complete")
+                            return (
+                              <CheckCircle2
+                                className="h-5 w-5 text-emerald-600"
+                                aria-hidden="true"
+                              />
+                            );
+                          if (s === "failed")
+                            return (
+                              <XCircle
+                                className="h-5 w-5 text-red-600"
+                                aria-hidden="true"
+                              />
+                            );
+                          return (
+                            <Circle
+                              className="h-5 w-5 text-neutral-300"
+                              aria-hidden="true"
+                            />
+                          );
+                        };
+
+                        return (
+                          <>
+                            <div className="px-4 pt-3 sm:px-6">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="text-xs text-neutral-500">
+                                  {isTransferring
+                                    ? `Step ${Math.min(completedCount + 1, total)} of ${total}`
+                                    : `0 of ${total} steps`}
+                                </div>
+                                <div className="text-xs font-medium text-neutral-700">
+                                  {progress}%
+                                </div>
+                              </div>
+                              <Progress
+                                value={isTransferring ? progress : 0}
+                                className="h-2"
+                              />
+                            </div>
+
+                            {/* Content */}
+                            <div className="px-4 pb-2 pt-2 sm:px-6">
+                              {!isTransferring ? (
+                                <p className="text-sm text-neutral-600">
+                                  Review the details above and confirm to start
+                                  the transfer sequence.
+                                </p>
+                              ) : (
+                                // Processing timeline
+                                <div className="mt-2">
+                                  <ul className="space-y-3">
+                                    <AnimatePresence initial={false}>
+                                      {steps.map((step, idx) => {
+                                        const s = statusFor(step.id);
+                                        return (
+                                          <motion.li
+                                            key={step.id}
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -8 }}
+                                            transition={{
+                                              duration: 0.2,
+                                              ease: "easeOut",
+                                            }}
+                                          >
+                                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between rounded-xl border bg-white px-3 py-3 shadow-sm gap-2">
+                                              <div className="flex items-center gap-3">
+                                                <StepIcon s={s as any} />
+                                                <div className="flex min-w-0 flex-col">
+                                                  <div className=" text-sm font-medium text-neutral-900">
+                                                    {step.label}
+                                                  </div>
+                                                  <div className="text-xs text-neutral-500">
+                                                    {step.sub}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              <StatusBadge s={s as any} />
+                                            </div>
+
+                                            {/* {idx < steps.length - 1 && (
+                                              <div
+                                                className={`absolute left-[10px] top-6 h-[24px] w-px ${
+                                                  s === "complete" ||
+                                                  s === "processing"
+                                                    ? "bg-blue-400"
+                                                    : "bg-transparent"
+                                                }`}
+                                                aria-hidden="true"
+                                              />
+                                            )} */}
+                                          </motion.li>
+                                        );
+                                      })}
+                                    </AnimatePresence>
+                                  </ul>
+
+                                  <AnimatePresence>
+                                    {transferStep === "error" &&
+                                      transferError && (
+                                        <motion.div
+                                          initial={{ opacity: 0, y: 8 }}
+                                          animate={{ opacity: 1, y: 0 }}
+                                          exit={{ opacity: 0, y: -8 }}
+                                          className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                                          role="alert"
+                                        >
+                                          <div className="font-medium">
+                                            Transaction Failed
+                                          </div>
+                                          <div className="mt-1 text-xs">
+                                            {transferError}
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                  </AnimatePresence>
+
+                                  <AnimatePresence>
+                                    {transferStep === "complete" && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+                                        role="status"
+                                      >
+                                        <div className="font-medium">
+                                          Liquidity Added Successfully
+                                        </div>
+                                        <div className="mt-1 text-xs">
+                                          Your tokens have been added to the
+                                          liquidity pool.
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Footer actions */}
+                            <div className="border-t bg-white px-4 py-3 sm:px-6">
+                              <DialogFooter className="gap-2 sm:justify-end">
+                                {!isTransferring &&
+                                transferStep !== "error" &&
+                                transferStep !== "complete" ? (
+                                  <Button
+                                    onClick={handleAddLiquidity}
+                                    className="min-w-28 w-full sm:w-auto"
+                                  >
+                                    Confirm
+                                  </Button>
+                                ) : transferStep === "error" ? (
+                                  <div className="flex w-full gap-2 sm:w-auto flex-col sm:flex-row">
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => {
+                                        setOpenConfirmAdd(false);
+                                        setIsTransferring(false);
+                                        setTransferStep("idle");
+                                        setTransferError(null);
+                                      }}
+                                      className="flex-1 sm:flex-none"
+                                    >
+                                      Close
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleAddLiquidity()}
+                                      className="flex-1 sm:flex-none"
+                                    >
+                                      Retry
+                                    </Button>
+                                  </div>
+                                ) : transferStep === "complete" ? (
+                                  <Button
+                                    onClick={() => {
+                                      setOpenConfirmAdd(false);
+                                      setIsTransferring(false);
+                                      setTransferStep("idle");
+                                    }}
+                                    className="min-w-28 w-full sm:w-auto"
+                                  >
+                                    Done
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    disabled
+                                    className="min-w-36 w-full sm:w-auto"
+                                  >
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Processing...
+                                  </Button>
+                                )}
+                              </DialogFooter>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -807,11 +1252,13 @@ export function LiquidityComponent({
                       Remove Liquidity
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="rounded-[16px]">
-                    <DialogHeader>
-                      <DialogTitle>Confirm Remove</DialogTitle>
+                  <DialogContent className="rounded-[16px] max-w-md sm:max-w-lg mx-auto">
+                    <DialogHeader className="px-4 py-3 sm:px-6">
+                      <DialogTitle className="text-lg sm:text-xl">
+                        Confirm Remove
+                      </DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-2 text-sm">
+                    <div className="px-4 sm:px-6 space-y-3 text-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Percent</span>
                         <span className="font-medium">{percent[0]}%</span>
@@ -845,12 +1292,13 @@ export function LiquidityComponent({
                         </span>
                       </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="px-4 py-3 sm:px-6 gap-2">
                       <Button
                         onClick={() => {
                           setOpenConfirmRemove(false);
                           toast.success("Liquidity removed");
                         }}
+                        className="w-full sm:w-auto min-w-28"
                       >
                         Confirm
                       </Button>
@@ -862,27 +1310,38 @@ export function LiquidityComponent({
           </Tabs>
 
           {/* Fee & Rates */}
-          <div className="rounded-[16px] border bg-card p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)] mt-4">
-            <div className="grid gap-2 text-muted-foreground">
+          <div className="rounded-[16px] border bg-card p-3 sm:p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)] mt-4">
+            <div className="grid gap-3 sm:gap-2 text-muted-foreground">
               <div className="flex items-center justify-between">
-                <span>Fee tier</span>
-                <span className="text-foreground">1.00% fee tier</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Current rates</span>
-                <span className="inline-flex items-center gap-2 text-foreground">
-                  1 {tokenA?.symbol || "..."} ={" "}
+                <span className="text-xs sm:text-sm">Fee tier</span>
+                <span className="text-foreground flex gap-1 text-xs sm:text-sm">
                   {poolInfo ? (
-                    priceAtoB.toFixed(6)
+                    (parseFloat(poolInfo.fee) / 100).toFixed(2)
                   ) : (
-                    <ValueSkeleton className="h-4 w-12" />
-                  )}{" "}
-                  {tokenB?.symbol || "..."}{" "}
+                    <Skeleton className="h-4 w-6 sm:w-8" />
+                  )}
+                  % fee tier
+                </span>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <span className="text-xs sm:text-sm">Current rates</span>
+                <span className="inline-flex items-center gap-2 text-foreground text-xs sm:text-sm">
+                  <span className="whitespace-nowrap">
+                    1 {tokenA?.symbol || "..."} ={" "}
+                    {poolInfo ? (
+                      <span className="font-mono">{priceAtoB.toFixed(6)}</span>
+                    ) : (
+                      <Skeleton className="h-4 w-12" />
+                    )}{" "}
+                    {tokenB?.symbol || "..."}
+                  </span>
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span>Range</span>
-                <span className="text-foreground">Full Range</span>
+                <span className="text-xs sm:text-sm">Range</span>
+                <span className="text-foreground text-xs sm:text-sm">
+                  Full Range
+                </span>
               </div>
             </div>
           </div>

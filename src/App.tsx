@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import Pools from "./pages/Pools";
 import Dashboard from "./pages/Dashboard";
 import { LiquidityPage } from "./pages/Liquidity";
+import Landing from "./pages/Landing";
 import { ArweaveWalletKit } from "@arweave-wallet-kit/react";
 import WanderStrategy from "@arweave-wallet-kit/wander-strategy";
 import { useMemo } from "react";
@@ -143,15 +144,29 @@ const App = () => (
           <Toaster />
           <Sonner />
           <HashRouter>
-            <AppShell>
-              <Routes>
-                <Route path="/" element={<Navigate to="/pools" replace />} />
-                <Route path="/pools" element={<Pools />} />
-                <Route path="/liquidity" element={<LiquidityPage />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AppShell>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/pools" element={
+                <AppShell>
+                  <Pools />
+                </AppShell>
+              } />
+              <Route path="/liquidity" element={
+                <AppShell>
+                  <LiquidityPage />
+                </AppShell>
+              } />
+              <Route path="/dashboard" element={
+                <AppShell>
+                  <Dashboard />
+                </AppShell>
+              } />
+              <Route path="*" element={
+                <AppShell>
+                  <NotFound />
+                </AppShell>
+              } />
+            </Routes>
           </HashRouter>
         </TooltipProvider>
       </ThemedArweaveWalletKit>

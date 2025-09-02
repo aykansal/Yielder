@@ -39,7 +39,7 @@ export function Navbar() {
     <header className="sticky top-0 z-40 h-[72px] w-full border-b bg-background/80 backdrop-blur-sm">
       <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between px-6">
         <div className="text-xl font-extrabold tracking-tight text-foreground">
-          Yielder
+          <Link to="/">Yielder</Link>
         </div>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -124,7 +124,12 @@ function WalletSection({
             variant="outline"
             aria-label="Open in explorer"
             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[hsl(var(--primary-700))] text-[hsl(var(--primary-700))] transition-colors hover:bg-[hsl(var(--primary))]"
-            onClick={() => window.open(`https://viewblock.io/arweave/address/${wallet.address}`, "_blank")}
+            onClick={() =>
+              window.open(
+                `https://viewblock.io/arweave/address/${wallet.address}`,
+                "_blank",
+              )
+            }
           >
             <ExternalLink className="h-4 w-4" />
           </Button>
