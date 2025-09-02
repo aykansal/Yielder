@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   Circle,
   Copy,
+  ExternalLink,
   Loader2,
   PlusCircle,
   RefreshCw,
@@ -37,6 +38,9 @@ import {
   addLiquidity,
   checkPoolExists,
   addLiquidityHandlerFn,
+  removeLiquidity,
+  burnLiquidityParams,
+  getUserLpPositions,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/use-global-state";
 import { LiquidityTokenInput } from "@/components/liquidity/LiquidityTokenInput";
@@ -51,6 +55,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
+import { PositionData } from "./Dashboard";
 
 export const LiquidityPage = () => {
   const location = useLocation();
@@ -97,6 +102,10 @@ export function LiquidityComponent({
   const [tokenBBalance, setTokenBBalance] = useState<string>("0");
   const [lpTokenBalance, setLpTokenBalance] = useState<string>("0");
 
+  // User LP position for current pool
+  const [currentPoolPosition, setCurrentPoolPosition] =
+    useState<PositionData | null>(null);
+
   // Form state - Add liquidity
   const [amountA, setAmountA] = useState("");
   const [amountB, setAmountB] = useState("");
@@ -128,6 +137,12 @@ export function LiquidityComponent({
     | "complete"
     | "error"
   >("idle");
+
+  // Remove liquidity process state
+  const [isRemovingLiquidity, setIsRemovingLiquidity] = useState(false);
+  const [removeTransactionId, setRemoveTransactionId] = useState<string | null>(
+    null,
+  );
 
   // Processing timeline configuration (in milliseconds)
   // BOTEGA: 3 steps - first_transfer → second_transfer → liquidity_message
@@ -266,6 +281,29 @@ export function LiquidityComponent({
     }
   };
 
+  // Fetch user LP positions and find current pool position
+  const loadUserLpPositions = async () => {
+    if (!wallet?.address || !processId) return;
+
+    try {
+      const positions = await getUserLpPositions(
+        ao,
+        luaProcessId,
+        wallet.address,
+      );
+
+      // Find the current pool position
+      const currentPosition = Object.values(positions).find(
+        (pos: any) => pos.processId === processId || pos.address === processId,
+      );
+
+      setCurrentPoolPosition(currentPosition as PositionData);
+    } catch (err) {
+      console.error("Error loading user LP positions:", err);
+      setCurrentPoolPosition(null as PositionData);
+    }
+  };
+
   // Load token balances and LP balance when wallet becomes available
   useEffect(() => {
     const loadBalancesWhenWalletReady = async () => {
@@ -276,6 +314,13 @@ export function LiquidityComponent({
 
     loadBalancesWhenWalletReady();
   }, [wallet?.address, tokenA, tokenB, processId]);
+
+  // Load user LP positions when remove tab is active
+  useEffect(() => {
+    if (activeTab === "remove" && wallet?.address && processId) {
+      loadUserLpPositions();
+    }
+  }, [activeTab, wallet?.address, processId]);
 
   // Calculate price ratio using hardcoded exchange rates
   const priceAtoB = useMemo(() => {
@@ -389,10 +434,21 @@ export function LiquidityComponent({
     };
   }, [poolInfo, lpTokenBalance, priceAtoB]);
 
-  const removeOut = {
-    tokenA: pooled.tokenA * (percent[0] / 100),
-    tokenB: pooled.tokenB * (percent[0] / 100),
-  };
+  // Calculate remove amounts based on user's actual position
+  const removeOut = useMemo(() => {
+    if (!currentPoolPosition) {
+      return { tokenA: 0, tokenB: 0, lpTokens: 0 };
+    }
+
+    const percentage = percent[0] / 100;
+    const lpTokensToRemove = currentPoolPosition.yielder_lp_token * percentage;
+
+    return {
+      tokenA: currentPoolPosition.user_token_x * percentage,
+      tokenB: currentPoolPosition.user_token_y * percentage,
+      lpTokens: lpTokensToRemove,
+    };
+  }, [currentPoolPosition, percent]);
 
   // Handle token change with pool validation
   const handleTokenChange = async (newToken: Token, isTokenA: boolean) => {
@@ -506,12 +562,12 @@ export function LiquidityComponent({
         pool: processId,
         tokenA: {
           token: tokenA.process as string,
-          quantity: vA.toString(),
+          quantity: Math.floor(vA * Math.pow(10, tokenA.decimals)).toString(),
           reservePool: poolInfo.px,
         },
         tokenB: {
           token: tokenB.process as string,
-          quantity: vB.toString(),
+          quantity: Math.floor(vB * Math.pow(10, tokenB.decimals)).toString(),
           reservePool: poolInfo.py,
         },
         activeWalletAddress: wallet.address,
@@ -640,6 +696,71 @@ export function LiquidityComponent({
     }
   };
 
+  const handleRemoveLiquidity = async () => {
+    if (!currentPoolPosition) {
+      toast.error("No position found for this pool");
+      return;
+    }
+
+    // Reset states
+    setIsRemovingLiquidity(true);
+    setRemoveTransactionId(null);
+
+    try {
+      const transactionId = await removeLiquidity(
+        ao,
+        {
+          pool: processId,
+          userWalletAddress: wallet?.address,
+          tokenA: {
+            token: tokenA.process,
+          },
+          tokenB: {
+            token: tokenB.process,
+          },
+          yielderLpTokenQuantity: Math.floor(
+            removeOut.lpTokens * Math.pow(10, 12),
+          ).toString(),
+        },
+        dex,
+      );
+      setRemoveTransactionId(transactionId);
+
+      toast.success(`Liquidity removed successfully!`, {
+        id: "remove-liquidity",
+        description: (
+          <div className="flex items-center gap-2">
+            <span>Transaction ID: {transactionId.substring(0, 5)}...</span>
+            <a
+              href={`https://ao.link/#/entity/${transactionId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:text-blue-700 underline"
+            >
+              <ExternalLink className="size-3.5 hover:text-blue-700" />
+            </a>
+          </div>
+        ),
+        duration: 10000,
+      });
+
+      setOpenConfirmRemove(false);
+
+      await refreshData();
+    } catch (error) {
+      console.error("Error removing liquidity:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+
+      toast.error("Failed to remove liquidity", {
+        id: "remove-liquidity",
+        description: errorMessage,
+      });
+    } finally {
+      setIsRemovingLiquidity(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 flex items-center justify-center pb-4 px-4">
@@ -656,7 +777,6 @@ export function LiquidityComponent({
 
           <div className="rounded-[16px] border bg-card p-3 sm:p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)] mb-4">
             <div className="grid grid-cols-[1fr_auto] items-start gap-3 sm:gap-4 text-sm">
-              {/* Left section */}
               <div className="space-y-1 min-w-0">
                 <div className="font-semibold flex items-center gap-2">
                   {poolInfo ? (
@@ -681,7 +801,15 @@ export function LiquidityComponent({
                   <span className="text-xs sm:text-sm whitespace-nowrap">
                     My Liquidity:
                   </span>
-                  {poolInfo && wallet?.address ? (
+                  {activeTab === "remove" ? (
+                    <span className="text-xs sm:text-sm">
+                      {currentPoolPosition ? (
+                        currentPoolPosition.yielder_lp_token
+                      ) : (
+                        <Skeleton className="h-4 w-8 sm:w-12" />
+                      )}
+                    </span>
+                  ) : poolInfo && wallet?.address ? (
                     parseFloat(lpTokenBalance) > 0 ? (
                       <span className="text-xs sm:text-sm">
                         {formatLPTokenAmount(lpTokenBalance)} LP
@@ -700,7 +828,7 @@ export function LiquidityComponent({
                 {poolInfo ? (
                   `${poolInfo ? (parseFloat(poolInfo.fee) / 100).toFixed(2) : "NA"}%`
                 ) : (
-                  <Skeleton className="h-4 w-6 sm:w-8" />
+                  <Skeleton className="h-3.5 w-6 sm:w-8" />
                 )}
                 {" fee"}
               </div>
@@ -1198,55 +1326,53 @@ export function LiquidityComponent({
                 </div>
 
                 {/* Token amounts display */}
-                <div className="space-y-1">
-                  <LiquidityTokenInput
-                    token={tokenA}
-                    value={
-                      tokenA
-                        ? removeOut.tokenA.toFixed(Math.min(tokenA.decimals, 6))
-                        : "0"
-                    }
-                    onValueChange={() => {}} // Read-only
-                    availableTokens={availableTokens}
-                    onTokenChange={() => {}} // Read-only
-                    balance="0"
-                    balanceFormatted={0}
-                    loadingBalances={false}
-                    decimals={tokenA?.decimals || 18}
-                    insufficientBalance={false}
-                    showMaxButton={false}
-                    readOnly={true}
-                  />
-                  <LiquidityTokenInput
-                    token={tokenB}
-                    value={
-                      tokenB
-                        ? removeOut.tokenB.toFixed(Math.min(tokenB.decimals, 6))
-                        : "0"
-                    }
-                    onValueChange={() => {}} // Read-only
-                    availableTokens={availableTokens}
-                    onTokenChange={() => {}} // Read-only
-                    balance="0"
-                    balanceFormatted={0}
-                    loadingBalances={false}
-                    decimals={tokenB?.decimals || 18}
-                    insufficientBalance={false}
-                    showMaxButton={false}
-                    readOnly={true}
-                  />
+                <div className="space-y-3">
+                  <div className="rounded-[16px] border bg-card p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        LP tokens to burn
+                      </span>
+                      <span className="text-sm font-medium">
+                        {currentPoolPosition ? (
+                          removeOut.lpTokens
+                        ) : (
+                          <Skeleton className="h-4 w-8 sm:w-20" />
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="rounded-[16px] border bg-muted/50 p-3 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+                    <div className="text-xs text-muted-foreground flex gap-2">
+                      Your position:{" "}
+                      {currentPoolPosition ? (
+                        `${currentPoolPosition.yielder_lp_token} LP tokens`
+                      ) : (
+                        <Skeleton className="h-4 w-8 sm:w-20" />
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Remove Liquidity Button */}
                 <Dialog
                   open={openConfirmRemove}
-                  onOpenChange={setOpenConfirmRemove}
+                  onOpenChange={(open) => {
+                    // Prevent closing modal during remove liquidity process
+                    if (isRemovingLiquidity) {
+                      return; // Don't allow closing during active transaction
+                    }
+                    setOpenConfirmRemove(open);
+                  }}
                 >
                   <DialogTrigger asChild>
                     <Button
                       variant="filled"
                       disabled={
-                        percent[0] === 0 || loading || !tokenA || !tokenB
+                        percent[0] === 0 ||
+                        loading ||
+                        !tokenA ||
+                        !tokenB ||
+                        !currentPoolPosition
                       }
                     >
                       Remove Liquidity
@@ -1255,54 +1381,76 @@ export function LiquidityComponent({
                   <DialogContent className="rounded-[16px] max-w-md sm:max-w-lg mx-auto">
                     <DialogHeader className="px-4 py-3 sm:px-6">
                       <DialogTitle className="text-lg sm:text-xl">
-                        Confirm Remove
+                        {isRemovingLiquidity
+                          ? "Processing Liquidity Removal"
+                          : "Confirm Remove"}
                       </DialogTitle>
                     </DialogHeader>
-                    <div className="px-4 sm:px-6 space-y-3 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Percent</span>
-                        <span className="font-medium">{percent[0]}%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">
-                          {tokenA?.symbol || "Token A"}
-                        </span>
-                        <span className="font-medium">
-                          {tokenA ? (
-                            removeOut.tokenA.toFixed(
-                              Math.min(tokenA.decimals, 6),
-                            )
-                          ) : (
-                            <Skeleton className="h-4 w-12" />
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">
-                          {tokenB?.symbol || "Token B"}
-                        </span>
-                        <span className="font-medium">
-                          {tokenB ? (
-                            removeOut.tokenB.toFixed(
-                              Math.min(tokenB.decimals, 6),
-                            )
-                          ) : (
-                            <Skeleton className="h-4 w-12" />
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                    <DialogFooter className="px-4 py-3 sm:px-6 gap-2">
-                      <Button
-                        onClick={() => {
-                          setOpenConfirmRemove(false);
-                          toast.success("Liquidity removed");
-                        }}
-                        className="w-full sm:w-auto min-w-28"
-                      >
-                        Confirm
-                      </Button>
-                    </DialogFooter>
+
+                    {!isRemovingLiquidity ? (
+                      <>
+                        <div className="px-4 sm:px-6 space-y-3 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">
+                              Percent
+                            </span>
+                            <span className="font-medium">{percent[0]}%</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">
+                              LP tokens to burn
+                            </span>
+                            <span className="font-medium">
+                              {removeOut.lpTokens.toFixed(6)}
+                            </span>
+                          </div>
+                        </div>
+                        <DialogFooter className="px-4 py-3 sm:px-6 gap-2">
+                          <Button
+                            onClick={handleRemoveLiquidity}
+                            className="w-full sm:w-auto min-w-28"
+                          >
+                            Confirm
+                          </Button>
+                        </DialogFooter>
+                      </>
+                    ) : (
+                      <>
+                        <div className="px-4 sm:px-6 space-y-4">
+                          <div className="flex items-center justify-center py-8">
+                            <div className="flex flex-col items-center gap-4">
+                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                              <div className="text-center">
+                                <p className="text-sm font-medium">
+                                  Removing Liquidity
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Processing your transaction...
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between font-mono text-xs">
+                            {removeTransactionId ? (
+                              <span className="truncate max-w-32 block">
+                                {removeTransactionId}
+                              </span>
+                            ) : (
+                              "Pending..."
+                            )}
+                          </div>
+                        </div>
+                        <DialogFooter className="px-4 py-3 sm:px-6 gap-2">
+                          <Button
+                            disabled
+                            className="w-full sm:w-auto min-w-36"
+                          >
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </Button>
+                        </DialogFooter>
+                      </>
+                    )}
                   </DialogContent>
                 </Dialog>
               </motion.div>
@@ -1310,41 +1458,45 @@ export function LiquidityComponent({
           </Tabs>
 
           {/* Fee & Rates */}
-          <div className="rounded-[16px] border bg-card p-3 sm:p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)] mt-4">
-            <div className="grid gap-3 sm:gap-2 text-muted-foreground">
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm">Fee tier</span>
-                <span className="text-foreground flex gap-1 text-xs sm:text-sm">
-                  {poolInfo ? (
-                    (parseFloat(poolInfo.fee) / 100).toFixed(2)
-                  ) : (
-                    <Skeleton className="h-4 w-6 sm:w-8" />
-                  )}
-                  % fee tier
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                <span className="text-xs sm:text-sm">Current rates</span>
-                <span className="inline-flex items-center gap-2 text-foreground text-xs sm:text-sm">
-                  <span className="whitespace-nowrap">
-                    1 {tokenA?.symbol || "..."} ={" "}
+          {activeTab === "add" && (
+            <div className="rounded-[16px] border bg-card p-3 sm:p-4 text-sm shadow-[0_4px_16px_rgba(0,0,0,0.05)] mt-4">
+              <div className="grid gap-3 sm:gap-2 text-muted-foreground">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm">Fee tier</span>
+                  <span className="text-foreground flex gap-1 text-xs sm:text-sm">
                     {poolInfo ? (
-                      <span className="font-mono">{priceAtoB.toFixed(6)}</span>
+                      (parseFloat(poolInfo.fee) / 100).toFixed(2)
                     ) : (
-                      <Skeleton className="h-4 w-12" />
-                    )}{" "}
-                    {tokenB?.symbol || "..."}
+                      <Skeleton className="h-4 w-6 sm:w-8" />
+                    )}
+                    % fee tier
                   </span>
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm">Range</span>
-                <span className="text-foreground text-xs sm:text-sm">
-                  Full Range
-                </span>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                  <span className="text-xs sm:text-sm">Current rates</span>
+                  <span className="inline-flex items-center gap-2 text-foreground text-xs sm:text-sm">
+                    <span className="whitespace-nowrap">
+                      1 {tokenA?.symbol || "..."} ={" "}
+                      {poolInfo ? (
+                        <span className="font-mono">
+                          {priceAtoB.toFixed(6)}
+                        </span>
+                      ) : (
+                        <Skeleton className="h-4 w-12" />
+                      )}{" "}
+                      {tokenB?.symbol || "..."}
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm">Range</span>
+                  <span className="text-foreground text-xs sm:text-sm">
+                    Full Range
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

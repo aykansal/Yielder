@@ -18,47 +18,37 @@ import { useAuth } from "@/hooks/use-global-state";
 import { DEX } from "@/types/pool.types";
 import { Skeleton } from "@/components/ui/skeleton";
 
+export interface PositionData {
+  processId: string;
+  dex: string;
+  address: string;
+  user_token_x: number;
+  user_token_y: number;
+  yielder_lp_token: number;
+  pool_lp_token: number;
+  token_x_address: string;
+  token_y_address: string;
+  timestamp: number | string; // depends on how you store it (unix time or ISO string)
+}
+
 export default function Dashboard() {
   const nav = useNavigate();
   const ao = useAo();
   const { wallet } = useAuth();
 
-  const [positions, setPositions] = useState([]);
+  const [positions, setPositions] = useState<PositionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const handleFetchUserLpPositions = async () => {
     try {
       setIsLoading(true);
-      const positionsData = await getUserLpPositions(
+      const transformedPositions = await getUserLpPositions(
         ao,
         luaProcessId,
         wallet?.address,
       );
-
-      const transformedPositions = Object.entries(positionsData || {}).map(
-        ([poolAddress, position]: [string, any]) => ({
-          processId: poolAddress,
-          dex: position.dex_name || "Unknown",
-          address: poolAddress,
-          user_token_x:
-            parseFloat(position.user_token_x || "0") / 1000000000000,
-          user_token_y:
-            parseFloat(position.user_token_y || "0") / 1000000000000,
-          yielder_lp_token:
-            parseFloat(position.yielder_lp_token || "0") / 1000000000000,
-          pool_lp_token:
-            parseFloat(position.pool_lp_token || "0") / 1000000000000,
-          token_x_address: position.token_x_address,
-          token_y_address: position.token_y_address,
-          timestamp: position.timestamp,
-        }),
-      );
-
-      setPositions(transformedPositions);
-      console.log(
-        "[dashboard.tsx] Loaded positions:",
-        transformedPositions.length,
-        "positions",
+      setPositions(
+        Array.isArray(transformedPositions) ? transformedPositions : [],
       );
     } catch (error) {
       console.error("Error fetching user LP positions:", error);
@@ -134,7 +124,7 @@ export default function Dashboard() {
               ))}
             </TableBody>
           </Table>
-        ) : positions.length === 0 ? (
+        ) : Object.keys(positions).length === 0 ? (
           <div className="p-12 text-center text-muted-foreground">
             You have no positions yet.
           </div>
@@ -154,7 +144,7 @@ export default function Dashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {positions.map((p) => {
+              {Object.values(positions).map((p) => {
                 const cellValues = [
                   {
                     text: `${p.address.slice(0, 8)}…${p.address.slice(-8)}`,
@@ -191,7 +181,7 @@ export default function Dashboard() {
                       {isLoading ? (
                         <Skeleton className="h-6 w-20" />
                       ) : (
-                        <DEXBadge name={p.dex} />
+                        <DEXBadge name={p.dex as DEX} />
                       )}
                     </TableCell>
                     {cellValues.map((cell, i) => (
@@ -210,16 +200,28 @@ export default function Dashboard() {
                         {isLoading ? (
                           <Skeleton className="h-8 w-16" />
                         ) : (
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              nav(
-                                `/liquidity?processId=${p.processId}&type=add&dex=${p.dex.toLowerCase() == DEX.BOTEGA.toLowerCase() ? DEX.BOTEGA : DEX.PERMASWAP}`,
-                              )
-                            }
-                          >
-                            Add
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                nav(
+                                  `/liquidity?processId=${p.processId}&type=add&dex=${p.dex.toLowerCase() == DEX.BOTEGA.toLowerCase() ? DEX.BOTEGA : DEX.PERMASWAP}`,
+                                )
+                              }
+                            >
+                              Add
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                nav(
+                                  `/liquidity?processId=${p.processId}&type=remove&dex=${p.dex.toLowerCase() == DEX.BOTEGA.toLowerCase() ? DEX.BOTEGA : DEX.PERMASWAP}`,
+                                )
+                              }
+                            >
+                              Remove
+                            </Button>
+                          </>
                         )}
                       </div>
                     </TableCell>

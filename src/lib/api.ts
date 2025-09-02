@@ -433,10 +433,72 @@ export async function getUserLpPositions(ao: any, processId: string, walletAddre
 
   // Handle the response - it comes as a JSON string, parse it
   try {
-    const parsedRes = JSON.parse(res);
-    return parsedRes || {};
+    const positionsData = JSON.parse(res);
+    const transformedPositions = Object.entries(positionsData || {}).map(
+      ([poolAddress, position]: [string, any]) => ({
+        processId: poolAddress,
+        dex: position.dex_name || "Unknown",
+        address: poolAddress,
+        user_token_x:
+          parseFloat(position.user_token_x || "0") / 1000000000000,
+        user_token_y:
+          parseFloat(position.user_token_y || "0") / 1000000000000,
+        yielder_lp_token:
+          parseFloat(position.yielder_lp_token || "0") / 1000000000000,
+        pool_lp_token:
+          parseFloat(position.pool_lp_token || "0") / 1000000000000,
+        token_x_address: position.token_x_address,
+        token_y_address: position.token_y_address,
+        timestamp: position.timestamp,
+      }),
+    );
+
+    return transformedPositions || {};
   } catch (error) {
     console.warn('Error parsing user LP positions response:', error);
     return {};
   }
-} 
+}
+
+
+export interface burnLiquidityParams {
+  pool: string
+  userWalletAddress: string
+  tokenA: {
+    token: string
+  }
+  tokenB: {
+    token: string
+  }
+  yielderLpTokenQuantity: string
+}
+
+export async function removeLiquidity(ao: any, data: burnLiquidityParams, dex: DEX) {
+  const signer = createSigner(window.arweaveWallet)
+  const tags = [
+    { name: "Action", value: "Burn" },
+    { name: "Pool", value: data.pool },
+    { name: "User", value: data.userWalletAddress },
+    { name: "TokenXAddress", value: data.tokenA.token },
+    { name: "TokenXQuantity", value: '1' },
+    { name: "TokenYAddress", value: data.tokenB.token },
+    { name: "TokenYQuantity", value: '1' },
+    { name: 'Quantity', value: data.yielderLpTokenQuantity },
+    { name: 'Dex-Name', value: dex }
+  ]
+
+
+  const txnId = await ao.message({
+    process: luaProcessId,
+    signer,
+    tags
+  }).then(async (msgId: string) => {
+    await ao.result({
+      process: luaProcessId,
+      message: msgId
+    })
+    return msgId
+  })
+
+  return txnId;
+}
