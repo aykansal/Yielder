@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { ValueSkeleton, clampDecimals, sanitizeNumericInput } from "./shared";
+import { clampDecimals, sanitizeNumericInput } from "./shared";
 import { formatTokenAmount as formatAmount } from "@/lib/helpers.utils";
 import { type Token } from "@/lib/api";
 import { Button } from "../ui/button";

@@ -4,7 +4,6 @@ import path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss(), nodePolyfills({
     include: ["buffer", "crypto", "stream", "util", "http"],

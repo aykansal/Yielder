@@ -3,8 +3,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import permaswapLogo from "@/assets/permaswap.png";
-import { ArrowRight, Github, Twitter, ExternalLink } from "lucide-react";
+// import permaswapLogo from "@/assets/permaswap.png";
+import { ArrowRight, Github, Twitter } from "lucide-react";
 import { useNavigate } from "react-router";
 
 export default function Landing() {
@@ -51,7 +51,8 @@ export default function Landing() {
                 Unify <span className="text-primary">DEX</span> Liquidity
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
-                Aggregate liquidity across multiple DEXs and execute the optimal trading route in one seamless transaction.
+                Aggregate liquidity across multiple DEXs and execute the optimal
+                trading route in one seamless transaction.
               </p>
             </div>
 
@@ -97,7 +98,8 @@ export default function Landing() {
               Why Choose Yielder?
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Experience the future of decentralized trading with our innovative features
+              Experience the future of decentralized trading with our innovative
+              features
             </p>
           </motion.div>
 
@@ -112,9 +114,12 @@ export default function Landing() {
               <Card className="h-64 relative overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300">
                 <CardContent className="p-6 h-full flex flex-col justify-between">
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Best Stake Finder</h3>
+                    <h3 className="text-xl font-semibold mb-2">
+                      Best Stake Finder
+                    </h3>
                     <p className="text-muted-foreground">
-                      AI-powered pool recommendations that maximize your yield potential
+                      AI-powered pool recommendations that maximize your yield
+                      potential
                     </p>
                   </div>
                   <div className="text-primary font-medium">Coming Soon</div>
@@ -132,9 +137,12 @@ export default function Landing() {
               <Card className="h-64 relative overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300">
                 <CardContent className="p-6 h-full flex flex-col justify-between">
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Cross-DEX Trading</h3>
+                    <h3 className="text-xl font-semibold mb-2">
+                      Cross-DEX Trading
+                    </h3>
                     <p className="text-muted-foreground">
-                      Execute trades across multiple DEXs in a single transaction
+                      Execute trades across multiple DEXs in a single
+                      transaction
                     </p>
                   </div>
                   <div className="text-primary font-medium">Live Now</div>
@@ -152,9 +160,12 @@ export default function Landing() {
               <Card className="h-64 relative overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300">
                 <CardContent className="p-6 h-full flex flex-col justify-between">
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Real-time Analytics</h3>
+                    <h3 className="text-xl font-semibold mb-2">
+                      Real-time Analytics
+                    </h3>
                     <p className="text-muted-foreground">
-                      Live APR, TVL, and volume data across all integrated protocols
+                      Live APR, TVL, and volume data across all integrated
+                      protocols
                     </p>
                   </div>
                   <div className="text-primary font-medium">Real-time</div>
@@ -176,9 +187,12 @@ export default function Landing() {
               <Card className="h-64 relative overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300">
                 <CardContent className="p-6 h-full flex flex-col justify-between">
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Liquidity Management</h3>
+                    <h3 className="text-xl font-semibold mb-2">
+                      Liquidity Management
+                    </h3>
                     <p className="text-muted-foreground">
-                      Seamless liquidity provision and removal with guided multi-step flows
+                      Seamless liquidity provision and removal with guided
+                      multi-step flows
                     </p>
                   </div>
                   <div className="text-primary font-medium">Advanced</div>
@@ -196,7 +210,9 @@ export default function Landing() {
               <Card className="h-64 relative overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300">
                 <CardContent className="p-6 h-full flex flex-col justify-between">
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Risk Assessment</h3>
+                    <h3 className="text-xl font-semibold mb-2">
+                      Risk Assessment
+                    </h3>
                     <p className="text-muted-foreground">
                       Conservative, balanced, and aggressive pool categorization
                     </p>
@@ -220,7 +236,9 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Meet Our Team</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Meet Our Team
+            </h2>
             <p className="text-xl text-muted-foreground">
               The minds behind Yielder's innovative DEX aggregation platform
             </p>
@@ -237,21 +255,34 @@ export default function Landing() {
               <Card className="text-center p-6">
                 <CardContent className="space-y-4">
                   <Avatar className="w-24 h-24 mx-auto">
-                    <AvatarImage src="/api/placeholder/96/96" alt="Team Member 1" />
+                    <AvatarImage
+                      src="/api/placeholder/96/96"
+                      alt="Team Member 1"
+                    />
                     <AvatarFallback className="text-lg">TM1</AvatarFallback>
                   </Avatar>
                   <div>
                     <h3 className="text-xl font-semibold mb-1">Ayush Verma</h3>
-                    <p className="text-muted-foreground mb-4">Founder & Lead Developer</p>
+                    <p className="text-muted-foreground mb-4">
+                      Founder & Lead Developer
+                    </p>
                   </div>
                   <div className="flex justify-center gap-4">
                     <Button variant="ghost" size="sm" asChild>
-                      <a href="https://twitter.com/ayushverma" target="_blank" rel="noopener noreferrer">
+                      <a
+                        href="https://twitter.com/ayushverma"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <Twitter className="h-4 w-4" />
                       </a>
                     </Button>
                     <Button variant="ghost" size="sm" asChild>
-                      <a href="https://github.com/ayushverma" target="_blank" rel="noopener noreferrer">
+                      <a
+                        href="https://github.com/ayushverma"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <Github className="h-4 w-4" />
                       </a>
                     </Button>
@@ -270,21 +301,34 @@ export default function Landing() {
               <Card className="text-center p-6">
                 <CardContent className="space-y-4">
                   <Avatar className="w-24 h-24 mx-auto">
-                    <AvatarImage src="/api/placeholder/96/96" alt="Team Member 2" />
+                    <AvatarImage
+                      src="/api/placeholder/96/96"
+                      alt="Team Member 2"
+                    />
                     <AvatarFallback className="text-lg">TM2</AvatarFallback>
                   </Avatar>
                   <div>
                     <h3 className="text-xl font-semibold mb-1">Co-Founder</h3>
-                    <p className="text-muted-foreground mb-4">Product & Strategy</p>
+                    <p className="text-muted-foreground mb-4">
+                      Product & Strategy
+                    </p>
                   </div>
                   <div className="flex justify-center gap-4">
                     <Button variant="ghost" size="sm" asChild>
-                      <a href="https://twitter.com/cofounder" target="_blank" rel="noopener noreferrer">
+                      <a
+                        href="https://twitter.com/cofounder"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <Twitter className="h-4 w-4" />
                       </a>
                     </Button>
                     <Button variant="ghost" size="sm" asChild>
-                      <a href="https://github.com/cofounder" target="_blank" rel="noopener noreferrer">
+                      <a
+                        href="https://github.com/cofounder"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <Github className="h-4 w-4" />
                       </a>
                     </Button>
@@ -304,15 +348,24 @@ export default function Landing() {
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <span className="text-lg font-bold text-primary">Y</span>
               </div>
-              <span className="text-2xl font-semibold text-muted-foreground">Yielder</span>
+              <span className="text-2xl font-semibold text-muted-foreground">
+                Yielder
+              </span>
             </div>
             <p className="text-muted-foreground max-w-md mx-auto mb-8">
-              Decentralized Liquidity Protocol - Unifying DEX trading across multiple blockchains
+              Decentralized Liquidity Protocol - Unifying DEX trading across
+              multiple blockchains
             </p>
             <div className="flex justify-center gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-foreground transition-colors">Documentation</a>
+              <a href="#" className="hover:text-foreground transition-colors">
+                Privacy Policy
+              </a>
+              <a href="#" className="hover:text-foreground transition-colors">
+                Terms of Service
+              </a>
+              <a href="#" className="hover:text-foreground transition-colors">
+                Documentation
+              </a>
             </div>
           </div>
         </div>
@@ -322,28 +375,34 @@ export default function Landing() {
 }
 
 // Microanimation Component
-function NetworkAnimation({ prefersReducedMotion }: { prefersReducedMotion?: boolean }) {
-  const [connections, setConnections] = useState<Array<{
-    id: number;
-    x: number;
-    y: number;
-    type: 'dex' | 'token';
-    label: string;
-  }>>([]);
+function NetworkAnimation({
+  prefersReducedMotion,
+}: {
+  prefersReducedMotion?: boolean;
+}) {
+  const [connections, setConnections] = useState<
+    Array<{
+      id: number;
+      x: number;
+      y: number;
+      type: "dex" | "token";
+      label: string;
+    }>
+  >([]);
 
   useEffect(() => {
     if (prefersReducedMotion) return;
 
     const dexes = [
-      { label: 'Permaswap', icon: permaswapLogo },
-      { label: 'Botega', icon: '/botega.svg' },
-      { label: 'DeXi', icon: '/dexi.svg' },
+      // { label: "Permaswap", icon: permaswapLogo },
+      { label: "Botega", icon: "/botega.svg" },
+      { label: "DeXi", icon: "/dexi.svg" },
     ];
 
     const tokens = [
-      { label: 'YT1', symbol: 'YT1' },
-      { label: 'YT2', symbol: 'YT2' },
-      { label: 'YT3', symbol: 'YT3' },
+      { label: "YT1", symbol: "YT1" },
+      { label: "YT2", symbol: "YT2" },
+      { label: "YT3", symbol: "YT3" },
     ];
 
     const radius = 200;
@@ -359,7 +418,7 @@ function NetworkAnimation({ prefersReducedMotion }: { prefersReducedMotion?: boo
         id: index,
         x: centerX + Math.cos(angle) * radius,
         y: centerY + Math.sin(angle) * radius,
-        type: 'dex' as const,
+        type: "dex" as const,
         label: dex.label,
       });
     });
@@ -371,7 +430,7 @@ function NetworkAnimation({ prefersReducedMotion }: { prefersReducedMotion?: boo
         id: index + 3,
         x: centerX + Math.cos(angle) * radius,
         y: centerY + Math.sin(angle) * radius,
-        type: 'token' as const,
+        type: "token" as const,
         label: token.label,
       });
     });
@@ -408,8 +467,8 @@ function NetworkAnimation({ prefersReducedMotion }: { prefersReducedMotion?: boo
             key={`line-${connection.id}`}
             x1="50%"
             y1="50%"
-            x2={`${50 + (connection.x / 4)}%`}
-            y2={`${50 + (connection.y / 4)}%`}
+            x2={`${50 + connection.x / 4}%`}
+            y2={`${50 + connection.y / 4}%`}
             stroke="currentColor"
             strokeWidth="1"
             className="text-primary/30"
@@ -426,9 +485,9 @@ function NetworkAnimation({ prefersReducedMotion }: { prefersReducedMotion?: boo
           key={`flow-${connection.id}`}
           className="absolute w-2 h-2 rounded-full bg-primary/60"
           style={{
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
           }}
           animate={{
             x: connection.x * 0.25,
@@ -450,9 +509,9 @@ function NetworkAnimation({ prefersReducedMotion }: { prefersReducedMotion?: boo
           key={`node-${connection.id}`}
           className="absolute w-12 h-12 rounded-full bg-background border-2 border-primary/20 flex items-center justify-center shadow-lg"
           style={{
-            left: `${50 + (connection.x / 4)}%`,
-            top: `${50 + (connection.y / 4)}%`,
-            transform: 'translate(-50%, -50%)',
+            left: `${50 + connection.x / 4}%`,
+            top: `${50 + connection.y / 4}%`,
+            transform: "translate(-50%, -50%)",
           }}
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

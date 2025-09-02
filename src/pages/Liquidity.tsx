@@ -40,7 +40,7 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/hooks/use-global-state";
 import { LiquidityTokenInput } from "@/components/liquidity/LiquidityTokenInput";
-import { clampDecimals, ValueSkeleton } from "@/components/liquidity/shared";
+import { clampDecimals } from "@/components/liquidity/shared";
 import { DEX, OrderStatus } from "@/types/pool.types";
 import { useAo } from "@/hooks/use-ao";
 import { ConnectButton } from "@arweave-wallet-kit/react";
@@ -1273,7 +1273,7 @@ export function LiquidityComponent({
                               Math.min(tokenA.decimals, 6),
                             )
                           ) : (
-                            <ValueSkeleton />
+                            <Skeleton className="h-4 w-12" />
                           )}
                         </span>
                       </div>
@@ -1287,7 +1287,7 @@ export function LiquidityComponent({
                               Math.min(tokenB.decimals, 6),
                             )
                           ) : (
-                            <ValueSkeleton />
+                            <Skeleton className="h-4 w-12" />
                           )}
                         </span>
                       </div>
