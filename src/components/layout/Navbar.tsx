@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
 import { ConnectButton, useProfileModal } from "@arweave-wallet-kit/react";
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
 
 export function Navbar() {
   const { isAuthenticated, wallet } = useAuth();
@@ -86,14 +87,16 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Github
+          <Button
             onClick={() => {
-              window.open(
-                "https://github.com/AAshu1412/Yielder",
-                "_blank",
-              );
+              window.open("https://github.com/AAshu1412/Yielder", "_blank");
             }}
-          />
+            variant="outline"
+            className="rounded-full cursor-pointer"
+            size="icon"
+          >
+            <Github />
+          </Button>
           <ThemeToggle />
           <WalletSection
             isAuthenticated={isAuthenticated}
