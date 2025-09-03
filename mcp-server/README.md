@@ -45,7 +45,7 @@ Add the following to your `claude_desktop_config.json`:
   "mcpServers": {
     "dex-pools": {
       "command": "node",
-      "args": ["/path/to/your/mcp-server/dist/index.js"]
+      "args": ["dex-mcp"]
     }
   }
 }
@@ -60,7 +60,7 @@ Add to your Cursor MCP configuration:
   "mcpServers": {
     "dex-pools": {
       "command": "node",
-      "args": ["/path/to/your/mcp-server/dist/index.js"]
+      "args": ["dex-mcp"]
     }
   }
 }
