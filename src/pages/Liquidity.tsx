@@ -170,7 +170,7 @@ export function LiquidityComponent({
       setIsBackgroundUpdating(true);
 
       // Refresh pool info
-      const pool = await getPoolInfo(processId, dex);
+      const pool = await getPoolInfo(processId, dex, ao);
       if (pool) {
         setPoolInfo(pool);
       }
@@ -229,7 +229,7 @@ export function LiquidityComponent({
         // Load token list and pool info in parallel
         const [tokens, pool] = await Promise.all([
           getTokenList(),
-          getPoolInfo(processId, dex),
+          getPoolInfo(processId, dex, ao),
         ]);
 
         setAvailableTokens(tokens);

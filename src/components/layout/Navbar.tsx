@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
 import { ConnectButton, useProfileModal } from "@arweave-wallet-kit/react";
-import { GitHubLogoIcon } from "@radix-ui/react-icons";
 
 export function Navbar() {
   const { isAuthenticated, wallet } = useAuth();

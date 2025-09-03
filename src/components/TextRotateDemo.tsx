@@ -2,8 +2,11 @@ import { LayoutGroup, motion } from "motion/react";
 
 import { TextRotate } from "@/components/ui/text-rotate";
 import { Button } from "./ui/button";
+import { useNavigate } from "react-router";
 
 function Preview() {
+  const nav = useNavigate();
+
   return (
     <div className="relative w-full h-full text-2xl sm:text-3xl md:text-5xl flex flex-col items-center justify-center font-overusedGrotesk bg-white dark:text-muted text-foreground font-light overflow-hidden p-12 sm:p-20 md:p-24 space-y-8">
       <LayoutGroup>
@@ -44,7 +47,7 @@ function Preview() {
         variant="outline"
         className="mt-6 sm:mt-8 md:mt-10 text-base sm:text-lg md:text-xl px-6 py-3 bg-transparent"
         onClick={() => {
-          window.location.href = "/#/pools";
+          nav("/pools");
         }}
       >
         Launch App

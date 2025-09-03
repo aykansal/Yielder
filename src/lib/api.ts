@@ -45,11 +45,11 @@ export interface Token {
 }
 
 // 1. Get individual pool data
-export async function getPoolInfo(poolProcessId: string, dex: DEX): Promise<PoolInfo> {
+export async function getPoolInfo(poolProcessId: string, dex: DEX, ao: any): Promise<PoolInfo> {
   try {
-    const data = await dryrun({
+    const data = await ao.dryrun({
       process: poolProcessId,
-      tags: [{ name: "Action", value: "Info" }]
+      tags: [{ name: "Action", value: "Info" }, { name: "Tx-Source", value: "Yielder" }]
     })
     console.log("[api.ts] response:", data);
 
@@ -118,7 +118,7 @@ export async function getUserTokenBalance(ao: any, tokenProcessId: string, walle
     console.log("[getUserTokenBalance starts]")
     const data = await ao.dryrun({
       process: tokenProcessId,
-      tags: [{ name: "Action", value: "Balance" }, { name: "Recipient", value: walletAddress }]
+      tags: [{ name: "Action", value: "Balance" }, { name: "Recipient", value: walletAddress }, { name: "Tx-Source", value: "Yielder" }]
     })
 
     if (!data.Messages || data.Messages.length === 0) {
@@ -246,6 +246,7 @@ export async function getBestStake(ao: any, tokenXProcess: string, tokenYProcess
       tags: [{ name: "Action", value: "Best-Stake" },
       { name: "TokenX", value: tokenXProcess },
       { name: "TokenY", value: tokenYProcess },
+      { name: "Tx-Source", value: "Yielder" }
       ],
     }).then(async (messageId) => {
       await ao.result({
@@ -258,7 +259,7 @@ export async function getBestStake(ao: any, tokenXProcess: string, tokenYProcess
 
     const data = await messageAR(ao, {
       process: luaProcessId,
-      tags: [{ name: "Action", value: "best-stake-user-response" }],
+      tags: [{ name: "Action", value: "best-stake-user-response" }, { name: "Tx-Source", value: "Yielder" }],
     }).then(async (messageId) => {
       return await ao.result({
         process: luaProcessId,
@@ -358,6 +359,7 @@ export const addLiquidityHandlerFn = async (
       { name: "TokenXQuantity", value: data.tokenA.quantity },
       { name: "TokenYAdrress", value: data.tokenB.token },
       { name: "TokenYQuantity", value: data.tokenB.quantity },
+      { name: "Tx-Source", value: "Yielder" }
     ],
   }).then(async (msgId: string) => {
     return await ao.result({
@@ -392,6 +394,7 @@ export const addLiquidityHandlerFn = async (
           name: "Token_x_Quantity",
           value: data.tokenA.quantity
         },
+        { name: "Tx-Source", value: "Yielder" }
       ],
     }).then(async (msgId: string) => {
       return await ao.result({
@@ -413,6 +416,10 @@ export const addLiquidityHandlerFn = async (
         {
           name: "Pool",
           value: data.pool
+        },
+        {
+          name: "Tx-Source",
+          value: "Yielder"
         }
       ],
     }).then(async (msgId: string) => {
@@ -434,15 +441,15 @@ export async function getUserLpPositions(ao: any, processId: string, walletAddre
   const res = await ao.message({
     process: processId,
     signer: createSigner(window.arweaveWallet),
-    tags: [{ name: "Action", value: "Track-User-Stake" }, { name: "User", value: walletAddress }]
+    tags: [{ name: "Action", value: "Track-User-Stake" }, { name: "User", value: walletAddress }, { name: "Tx-Source", value: "Yielder" }]
   }).then(async (msgId: string) => {
     const res = await ao.result({
       process: processId,
-      message: msgId
+      message: msgId,
     })
     return res.Messages[0].Data
   })
-console.log(res)
+  console.log(res)
   // Handle the response - it comes as a JSON string, parse it
   try {
     if (res == null) {
@@ -513,7 +520,8 @@ export async function removeLiquidity(ao: any, data: burnLiquidityParams, dex: D
     { name: "TokenYAddress", value: data.tokenB.token },
     { name: "TokenYQuantity", value: '1' },
     { name: 'Quantity', value: data.yielderLpTokenQuantity },
-    { name: 'Dex-Name', value: dex }
+    { name: 'Dex-Name', value: dex },
+    { name: "Tx-Source", value: "Yielder" }
   ]
 
 

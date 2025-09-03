@@ -414,7 +414,7 @@ export async function connectWallet(): Promise<WalletConnectionResponse> {
         "ACCESS_ARWEAVE_CONFIG",
       ],
       {
-        name: "Yield-Dev",
+        name: "Yielder",
         logo: "https://arweave.net/pYIMnXpJRFUwTzogx_z5HCOPRRjCbSPYIlUqOjJ9Srs",
       },
       {

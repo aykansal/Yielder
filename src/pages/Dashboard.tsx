@@ -48,7 +48,6 @@ export default function Dashboard() {
         luaProcessId,
         wallet?.address,
       );
-      console.log(transformedPositions);
       setPositions(
         Array.isArray(transformedPositions) ? transformedPositions : [],
       );
@@ -61,9 +60,18 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (wallet?.address) {
+    if (!wallet?.address) return;
+
+    // fetch immediately on mount
+    handleFetchUserLpPositions();
+
+    // set interval for polling every 5 seconds
+    const interval = setInterval(() => {
       handleFetchUserLpPositions();
-    }
+    }, 5000);
+
+    // cleanup on unmount
+    return () => clearInterval(interval);
   }, [wallet?.address]);
 
   return (
