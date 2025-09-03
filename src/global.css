@@ -1,6 +1,5 @@
 /** @import must precede all other statements */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap")
-layer(base);
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap") layer(base);
 
 @import "tailwindcss";
 
@@ -131,14 +130,17 @@ layer(base);
     from {
       height: 0;
     }
+
     to {
       height: var(--radix-accordion-content-height);
     }
   }
+
   @keyframes accordion-up {
     from {
       height: var(--radix-accordion-content-height);
     }
+
     to {
       height: 0;
     }
@@ -148,15 +150,18 @@ layer(base);
 @utility container {
   margin-inline: auto;
   padding-inline: 2rem;
-  @media (width >= --theme(--breakpoint-sm)) {
+
+  @media (width >=--theme(--breakpoint-sm)) {
     max-width: none;
   }
-  @media (width >= 1400px) {
+
+  @media (width >=1400px) {
     max-width: 1400px;
   }
 }
- 
+
 @layer utilities {
+
   /* Width of the scrollbar */
   ::-webkit-scrollbar {
     width: 3.2px;
@@ -164,24 +169,25 @@ layer(base);
 
   /* Track (background) */
   ::-webkit-scrollbar-track {
-    background: theme(--color-background); 
+    background: theme(--color-background);
   }
 
   /* Scroll thumb (the handle) */
   ::-webkit-scrollbar-thumb {
-    background: theme(--color-primary); 
-    border-radius: 9999px; 
+    background: theme(--color-primary);
+    border-radius: 9999px;
   }
 
   /* Thumb on hover */
   ::-webkit-scrollbar-thumb:hover {
-    background: theme(--color-border); 
+    background: theme(--color-border);
   }
 }
 
 
 /* Compatibility styles for Tailwind v4 (border default changed to `currentcolor`) */
 @layer base {
+
   *,
   ::after,
   ::before,

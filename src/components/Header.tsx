@@ -1,36 +1,8 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Grid } from "@react-three/drei";
+import { Grid } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-
-// const manrope = Manrope({ subsets: ['latin'] })
-
-function SpinningLogo() {
-  const groupRef = useRef<THREE.Group>(null);
-
-  useFrame((state, delta) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.5;
-    }
-  });
-
-  return (
-    <group ref={groupRef}>
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#ffffff" />
-      </mesh>
-      <mesh position={[0.5, 0.5, 0.5]}>
-        <boxGeometry args={[0.5, 0.5, 0.5]} />
-        <meshStandardMaterial color="#cccccc" />
-      </mesh>
-      <mesh position={[-0.5, -0.5, -0.5]}>
-        <boxGeometry args={[0.5, 0.5, 0.5]} />
-        <meshStandardMaterial color="#999999" />
-      </mesh>
-    </group>
-  );
-}
+import { Button } from "@/components/ui/button";
 
 function AnimatedBox({
   initialPosition,
@@ -70,7 +42,7 @@ function AnimatedBox({
     return () => clearInterval(interval);
   }, []);
 
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (meshRef.current) {
       currentPosition.current.lerp(targetPosition, 0.1);
       meshRef.current.position.copy(currentPosition.current);
@@ -80,13 +52,15 @@ function AnimatedBox({
   return (
     <mesh ref={meshRef} position={initialPosition}>
       <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="#ffffff" opacity={0.9} transparent />
+      {/* Fill color: light/dark adaptive */}
+      <meshStandardMaterial color={"#F7CFE1"} opacity={0.85} transparent />
+      {/* Pink branded edge outline */}
       <lineSegments>
         <edgesGeometry
           attach="geometry"
           args={[new THREE.BoxGeometry(1, 1, 1)]}
         />
-        <lineBasicMaterial attach="material" color="#000000" linewidth={2} />
+        <lineBasicMaterial attach="material" color="#ED7EAA" linewidth={2} />
       </lineSegments>
     </mesh>
   );
@@ -108,9 +82,10 @@ function Scene() {
 
   return (
     <>
-      <OrbitControls />
-      <ambientLight intensity={0.5} />
+      <ambientLight intensity={0.6} />
       <pointLight position={[10, 10, 10]} />
+
+      {/* Grid adopts theme colors */}
       <Grid
         renderOrder={-1}
         position={[0, 0, 0]}
@@ -119,9 +94,11 @@ function Scene() {
         cellThickness={0.5}
         sectionSize={3}
         sectionThickness={1}
-        sectionColor={new THREE.Color(0.5, 0.5, 0.5)}
+        cellColor={new THREE.Color("#EDEDF2")}
+        sectionColor={new THREE.Color("#ED7EAA")}
         fadeDistance={50}
       />
+
       {initialPositions.map((position, index) => (
         <AnimatedBox key={index} initialPosition={position} />
       ))}
@@ -131,60 +108,23 @@ function Scene() {
 
 export default function LandingHero() {
   return (
-    <div
-      className={`relative w-full h-screen bg-black text-white overflow-hidden {manrope.className}`}
-    >
-      <header className="absolute top-0 left-0 right-0 z-10 p-4">
-        <nav className="flex justify-between items-center max-w-6xl mx-auto">
-          <div className="flex items-center">
-            <div className="w-20 h-20">
-              <Canvas camera={{ position: [0, 0, 5] }}>
-                <ambientLight intensity={0.5} />
-                <pointLight position={[10, 10, 10]} />
-                <SpinningLogo />
-              </Canvas>
-            </div>
-            <span className="text-2xl font-bold">ChainSwitch</span>
-          </div>
-          <ul className="flex space-x-6">
-            <li>
-              <a href="#" className="hover:text-gray-300">
-                Home
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-gray-300">
-                Features
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-gray-300">
-                Pricing
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-gray-300">
-                Contact
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </header>
+    <div className="relative w-full h-screen overflow-hidden bg-white dark:bg-[#11151D]">
       <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-10">
-        <h1 className="text-6xl font-bold mb-8 max-w-4xl mx-auto">
-          A unified API for on-chain transactions
-        </h1>
-        <h2 className="text-xl mb-10">
-          Route transactions from your dapp between L2 chains in real time
-        </h2>
-        <button className="bg-white text-black font-bold py-3 px-6 rounded-md hover:bg-gray-200 transition duration-300">
-          Join waitlist
-        </button>
+        <Button
+          onClick={() => {
+            window.location.href = "/#/pools";
+          }}
+          className="font-bold py-3 px-6 rounded-xl transition duration-300 
+                     bg-[#ED7EAA] hover:bg-[#F3A0C0] text-white shadow-lg"
+        >
+          Launch App
+        </Button>
       </div>
+
       <Canvas
         shadows
-        camera={{ position: [30, 30, 30], fov: 50 }}
-        className="absolute inset-0"
+        camera={{ position: [25, 30, 20], fov: 35 }}
+        className="absolute inset-0 pointer-events-none"
       >
         <Scene />
       </Canvas>

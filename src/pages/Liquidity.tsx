@@ -19,7 +19,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   Circle,
-  Copy,
   ExternalLink,
   Loader2,
   PlusCircle,
@@ -54,6 +53,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { PositionData } from "./Dashboard";
+import { ScriptCopyBtn } from "@/components/magicui/script-copy-btn";
 
 export const LiquidityPage = () => {
   const location = useLocation();
@@ -771,13 +771,7 @@ export function LiquidityComponent({
                 {isBackgroundUpdating && (
                   <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground flex-shrink-0" />
                 )}
-                <Copy
-                  className="cursor-pointer h-3 w-3 text-muted-foreground hover:text-foreground flex-shrink-0"
-                  onClick={() => {
-                    window.navigator.clipboard.writeText(processId);
-                    toast.success("Copied to clipboard");
-                  }}
-                />
+                <ScriptCopyBtn command={processId} />
               </div>
               <div className="text-muted-foreground flex items-baseline gap-2">
                 <span className="text-xs sm:text-sm whitespace-nowrap">

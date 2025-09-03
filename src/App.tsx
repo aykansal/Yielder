@@ -145,7 +145,7 @@ const App = () => (
           <Sonner />
           <HashRouter>
             <Routes>
-              <Route path="/" element={<Navigate to="/pools" replace />} />
+              <Route path="/" element={<Landing />} />
               <Route
                 path="/pools"
                 element={
