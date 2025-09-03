@@ -1825,38 +1825,56 @@ end)
 
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 -- Global flag to prevent re-entrancy
 USER_RUNNING_YIELD_OPTIMIZER = false
 
--- Helper function to find user's token quantity
-function getUserTokenQuantity(user_address, pool_address, token_address)
-    if not USERS_STAKE_TRACK or
-        not USERS_STAKE_TRACK[user_address] or
-        not USERS_STAKE_TRACK[user_address][pool_address] then
-        return nil
+-- Function to find best pool for specific token pair
+function findBestPoolForTokenPair(poolsData, tokenA, tokenB)
+    local matchingPools = {}
+
+    -- Find all pools with the same token pair
+    for dexName, pools in pairs(poolsData) do
+        for poolAddress, poolData in pairs(pools) do
+            if poolData.tvl and poolData.tvl > 0 and poolData.apr then
+                -- Check if tokens match (either A-B or B-A order)
+                if (poolData.tokenA == tokenA and poolData.tokenB == tokenB) or
+                    (poolData.tokenA == tokenB and poolData.tokenB == tokenA) then
+                    table.insert(matchingPools, poolData)
+                end
+            end
+        end
     end
 
-    local pool_data = USERS_STAKE_TRACK[user_address][pool_address]
+    if #matchingPools == 0 then return nil end
 
-    if pool_data.token_x_address == token_address then
-        return pool_data.user_token_x or 0
-    elseif pool_data.token_y_address == token_address then
-        return pool_data.user_token_y or 0
-    else
-        return nil
+    -- Sort by APR (highest first)
+    table.sort(matchingPools, function(a, b) return a.apr > b.apr end)
+
+    local bestPool = matchingPools[1]
+
+    -- Apply TVL safety check
+    if bestPool.tvl < 1000 and #matchingPools > 1 then
+        for i = 2, math.min(5, #matchingPools) do
+            local candidate = matchingPools[i]
+            if candidate.apr >= bestPool.apr * 0.8 and candidate.tvl > bestPool.tvl * 3 then
+                bestPool = candidate
+                break
+            end
+        end
     end
+
+    return bestPool
 end
 
 -- Main yield optimization function
-function optimizeUserYields()
+function optimizeUserYieldsTokenSpecific(msg)
     -- Prevent re-entrancy
     if USER_RUNNING_YIELD_OPTIMIZER then
         return
     end
     USER_RUNNING_YIELD_OPTIMIZER = true
 
-    print("Starting yield optimization check...")
+    print("Starting token-pair-specific yield optimization...")
 
     -- Safety check for data availability
     if not CRONDATAPOOL or not USERS_STAKE_TRACK then
@@ -1865,21 +1883,12 @@ function optimizeUserYields()
         return
     end
 
-    -- Find the current best pool
-    local bestPool = findBestPool(CRONDATAPOOL)
-    if not bestPool then
-        print("No best pool found")
-        USER_RUNNING_YIELD_OPTIMIZER = false
-        return
-    end
-
-    print("Best pool found: " .. (bestPool.poolAddress or "unknown") .. " with APR: " .. (bestPool.apr or 0))
-
     -- Analyze each user's positions
     for user_address, user_pools in pairs(USERS_STAKE_TRACK) do
         for current_pool_address, stake_data in pairs(user_pools) do
             -- Skip if no valid stake data
-            if not stake_data or not stake_data.dex_name then
+            if not stake_data or not stake_data.dex_name or
+                not stake_data.token_x_address or not stake_data.token_y_address then
                 goto continue_pool
             end
 
@@ -1900,16 +1909,34 @@ function optimizeUserYields()
 
             print("Analyzing user " .. user_address .. " in pool " .. current_pool_address)
             print("Current APR: " .. current_apr .. "%, TVL: $" .. current_tvl)
+            print("Token pair: " .. stake_data.token_x_address .. " / " .. stake_data.token_y_address)
+
+            -- **KEY FIX: Find best pool for SAME token pair only**
+            local bestPoolForPair = findBestPoolForTokenPair(
+                CRONDATAPOOL,
+                stake_data.token_x_address,
+                stake_data.token_y_address
+            )
+
+            if not bestPoolForPair then
+                print("No other pools found for this token pair")
+                goto continue_pool
+            end
+
+            print("Best pool for this token pair: " .. bestPoolForPair.poolAddress ..
+                " with APR: " .. bestPoolForPair.apr .. "%")
 
             -- Check if best pool is significantly better (15% improvement threshold)
             local improvement_threshold = 1.15 -- 15% better APR required
             local min_tvl_threshold = 1000     -- Minimum $1000 TVL required
 
-            if bestPool.apr > (current_apr * improvement_threshold) and
-                bestPool.tvl > min_tvl_threshold and
-                bestPool.poolAddress ~= current_pool_address then
-                print("Better pool found! Moving user from " .. current_pool_address .. " to " .. bestPool.poolAddress)
-                print("APR improvement: " .. current_apr .. "% -> " .. bestPool.apr .. "%")
+            if bestPoolForPair.apr > (current_apr * improvement_threshold) and
+                bestPoolForPair.tvl > current_tvl and
+                bestPoolForPair.poolAddress ~= current_pool_address then
+                print("Better pool found! Moving user from " .. current_pool_address ..
+                    " to " .. bestPoolForPair.poolAddress)
+                print("APR improvement: " .. current_apr .. "% -> " .. bestPoolForPair.apr .. "%")
+                print("Same token pair: " .. stake_data.token_x_address .. " / " .. stake_data.token_y_address)
 
                 -- Extract user's current stake amounts
                 local user_token_x = stake_data.user_token_x or 0
@@ -1922,10 +1949,11 @@ function optimizeUserYields()
                         Send({
                             Target = current_pool_address,
                             Action = "RemoveLiquidity",
+                            MinX = "1",
+                            MinY = "1",
                             Quantity = tostring(user_lp_tokens)
                         })
                     elseif stake_data.dex_name == "BOTEGA" then
-                        -- Send burn message to BOTEGA pool
                         Send({
                             Target = current_pool_address,
                             Action = "Burn",
@@ -1933,45 +1961,45 @@ function optimizeUserYields()
                         })
                     end
 
-                    -- Step 2: Add liquidity to best pool
-                    if bestPool.dexName == "PERMASWAP" then
+                    -- Step 2: Add liquidity to best pool (same token pair)
+                    if bestPoolForPair.dexName == "PERMASWAP" then
                         -- Transfer tokens to new pool first
                         Send({
                             Target = stake_data.token_x_address,
                             Action = "Transfer",
-                            Recipient = bestPool.poolAddress,
+                            Recipient = bestPoolForPair.poolAddress,
                             Quantity = tostring(user_token_x)
                         })
                         Send({
                             Target = stake_data.token_y_address,
                             Action = "Transfer",
-                            Recipient = bestPool.poolAddress,
+                            Recipient = bestPoolForPair.poolAddress,
                             Quantity = tostring(user_token_y)
                         })
 
                         -- Add liquidity to new pool
                         Send({
-                            Target = bestPool.poolAddress,
+                            Target = bestPoolForPair.poolAddress,
                             Action = "AddLiquidity",
-                            MinLiquidity = "1" -- Use minimal liquidity requirement
+                            MinLiquidity = "1"
                         })
-                    elseif bestPool.dexName == "BOTEGA" then
+                    elseif bestPoolForPair.dexName == "BOTEGA" then
                         -- Transfer tokens to BOTEGA pool
                         Send({
                             Target = stake_data.token_x_address,
                             Action = "Transfer",
-                            Recipient = bestPool.poolAddress,
+                            Recipient = bestPoolForPair.poolAddress,
                             Quantity = tostring(user_token_x),
                             ['X-Action'] = "Provide",
-                            ["X-Slippage-Tolerance"] = "0.05"
+                            ["X-Slippage-Tolerance"] = tostring(50)
                         })
                         Send({
                             Target = stake_data.token_y_address,
                             Action = "Transfer",
-                            Recipient = bestPool.poolAddress,
+                            Recipient = bestPoolForPair.poolAddress,
                             Quantity = tostring(user_token_y),
                             ['X-Action'] = "Provide",
-                            ["X-Slippage-Tolerance"] = "0.05"
+                            ["X-Slippage-Tolerance"] = tostring(50)
                         })
                     end
 
@@ -1980,32 +2008,33 @@ function optimizeUserYields()
                     USERS_STAKE_TRACK[user_address][current_pool_address] = nil
 
                     -- Create new pool entry
-                    if not USERS_STAKE_TRACK[user_address][bestPool.poolAddress] then
-                        USERS_STAKE_TRACK[user_address][bestPool.poolAddress] = {}
+                    if not USERS_STAKE_TRACK[user_address][bestPoolForPair.poolAddress] then
+                        USERS_STAKE_TRACK[user_address][bestPoolForPair.poolAddress] = {}
                     end
 
-                    -- Update with new pool data
-                    USERS_STAKE_TRACK[user_address][bestPool.poolAddress] = {
+                    -- Update with new pool data (same tokens, new pool)
+                    USERS_STAKE_TRACK[user_address][bestPoolForPair.poolAddress] = {
                         user_token_x = user_token_x,
                         user_token_y = user_token_y,
-                        pool_address = bestPool.poolAddress,
-                        token_x_address = stake_data.token_x_address,
-                        token_y_address = stake_data.token_y_address,
-                        dex_name = bestPool.dexName,
-                        timestamp = os.time(),
+                        pool_address = bestPoolForPair.poolAddress,
+                        token_x_address = stake_data.token_x_address, -- Same tokens
+                        token_y_address = stake_data.token_y_address, -- Same tokens
+                        dex_name = bestPoolForPair.dexName,
+                        timestamp = msg.Timestamp,
                         pool_lp_token = 0, -- Will be updated by LiquidityAdded-Notice
                         yielder_lp_token = 0,
                         deposited_token_x_quantity = user_token_x,
                         deposited_token_y_quantity = user_token_y
                     }
 
-                    print("Successfully moved user " .. user_address .. " to better pool!")
+                    print("Successfully moved user " .. user_address ..
+                        " to better pool with SAME token pair!")
 
                     -- Only move to one better pool per user per run
                     break
                 end
             else
-                print("Current pool is already optimal or improvement not significant enough")
+                print("Current pool is already optimal for this token pair or improvement not significant enough")
             end
 
             ::continue_pool::
@@ -2013,31 +2042,30 @@ function optimizeUserYields()
     end
 
     USER_RUNNING_YIELD_OPTIMIZER = false
-    print("Yield optimization completed.")
+    print("Token-pair-specific yield optimization completed.")
 end
 
--- Handler that runs automatically (can be triggered by cron or events)
-Handlers.add("Auto-Yield-Optimizer", "Auto-Yield-Optimizer", function(msg)
-    optimizeUserYields()
+-- Handler that runs automatically
+Handlers.add("Auto-Token-Pair-Yield-Optimizer", "Auto-Token-Pair-Yield-Optimizer", function(msg)
+    optimizeUserYieldsTokenSpecific(msg)
 
     -- Send confirmation back
     ao.send({
         Target = msg.From,
         Data = require("json").encode({
             success = true,
-            message = "Yield optimization completed",
-            timestamp = os.time()
+            message = "Token-pair-specific yield optimization completed",
+            timestamp = msg.Timestamp
         })
     })
 end)
+
 
 -- Optional: Handler for manual trigger (for testing)
 Handlers.add("Manual-Yield-Check", "Manual-Yield-Check", function(msg)
     print("Manual yield optimization triggered")
     optimizeUserYields()
 end)
-
-
 
 
 
