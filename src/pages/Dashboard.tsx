@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-global-state";
 import { DEX } from "@/types/pool.types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RefreshCw } from "lucide-react";
 
 export interface PositionData {
   processId: string;
@@ -47,6 +48,7 @@ export default function Dashboard() {
         luaProcessId,
         wallet?.address,
       );
+      console.log(transformedPositions);
       setPositions(
         Array.isArray(transformedPositions) ? transformedPositions : [],
       );
@@ -68,6 +70,11 @@ export default function Dashboard() {
     <ProtectedRoute>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">User Dashboard</h1>
+        <Button variant="outline" onClick={() => handleFetchUserLpPositions()}>
+          <RefreshCw
+            className={`h-4 w-4 ${isLoading ? "animate-spin animate-pulse" : ""}`}
+          />
+        </Button>
       </div>
       <div className="rounded-[16px] border bg-card p-4 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
         {isLoading ? (

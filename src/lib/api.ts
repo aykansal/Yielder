@@ -442,10 +442,10 @@ export async function getUserLpPositions(ao: any, processId: string, walletAddre
     })
     return res.Messages[0].Data
   })
-
+console.log(res)
   // Handle the response - it comes as a JSON string, parse it
   try {
-    if (res !== null) {
+    if (res == null) {
       const data = {
         processId: "",
         dex: "",
