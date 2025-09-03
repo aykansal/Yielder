@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, Navigate, HashRouter } from "react-router";
+import { Routes, Route, HashRouter } from "react-router";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { AppShell } from "@/components/layout/AppShell";
 import NotFound from "./pages/NotFound";
@@ -16,6 +16,7 @@ import Landing from "./pages/Landing";
 import { ArweaveWalletKit } from "@arweave-wallet-kit/react";
 import WanderStrategy from "@arweave-wallet-kit/wander-strategy";
 import { useMemo } from "react";
+import History from "./pages/History";
 
 const queryClient = new QueryClient();
 
@@ -167,6 +168,14 @@ const App = () => (
                 element={
                   <AppShell>
                     <Dashboard />
+                  </AppShell>
+                }
+              />
+              <Route
+                path="/history"
+                element={
+                  <AppShell>
+                    <History />
                   </AppShell>
                 }
               />

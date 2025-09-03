@@ -23,10 +23,10 @@ export const APM_INSTALLER =
 // Common tags used across the application
 export const CommonTags: Tag[] = [
   {
-    name: "Name",
+    name: "App-Name",
     value: "Yielder"
   },
-  { name: "Version", value: "2.0.0" },
+  { name: "App-Version", value: "1.0.0" },
   { name: "Authority", value: "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY" },
   { name: "Scheduler", value: "_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA" },
 ];

@@ -49,7 +49,10 @@ export async function getPoolInfo(poolProcessId: string, dex: DEX, ao: any): Pro
   try {
     const data = await ao.dryrun({
       process: poolProcessId,
-      tags: [{ name: "Action", value: "Info" }, { name: "Tx-Source", value: "Yielder" }]
+      tags: [{ name: "Action", value: "Info" }, {
+        name: "App-Name",
+        value: "Yielder"
+      }, { name: "Tx-Source", value: "Yielder" }, { name: "Dex-Name", value: dex }]
     })
     console.log("[api.ts] response:", data);
 
@@ -118,7 +121,7 @@ export async function getUserTokenBalance(ao: any, tokenProcessId: string, walle
     console.log("[getUserTokenBalance starts]")
     const data = await ao.dryrun({
       process: tokenProcessId,
-      tags: [{ name: "Action", value: "Balance" }, { name: "Recipient", value: walletAddress }, { name: "Tx-Source", value: "Yielder" }]
+      tags: [{ name: "Action", value: "Balance" }, { name: "Recipient", value: walletAddress }, { name: "Tx-Source", value: "Yielder" }, { name: "App-Name", value: "Yielder" }]
     })
 
     if (!data.Messages || data.Messages.length === 0) {
@@ -243,10 +246,12 @@ export async function getBestStake(ao: any, tokenXProcess: string, tokenYProcess
     await ao.message({
       process: luaProcessId,
       signer: createSigner(window.arweaveWallet),
-      tags: [{ name: "Action", value: "Best-Stake" },
-      { name: "TokenX", value: tokenXProcess },
-      { name: "TokenY", value: tokenYProcess },
-      { name: "Tx-Source", value: "Yielder" }
+      tags: [
+        { name: "App-Name", value: "Yielder" },
+        { name: "Action", value: "Best-Stake" },
+        { name: "TokenX", value: tokenXProcess },
+        { name: "TokenY", value: tokenYProcess },
+        { name: "Tx-Source", value: "Yielder" }
       ],
     }).then(async (messageId) => {
       await ao.result({
@@ -259,7 +264,7 @@ export async function getBestStake(ao: any, tokenXProcess: string, tokenYProcess
 
     const data = await messageAR(ao, {
       process: luaProcessId,
-      tags: [{ name: "Action", value: "best-stake-user-response" }, { name: "Tx-Source", value: "Yielder" }],
+      tags: [{ name: "Action", value: "best-stake-user-response" }, { name: "Tx-Source", value: "Yielder" }, { name: "App-Name", value: "Yielder" }],
     }).then(async (messageId) => {
       return await ao.result({
         process: luaProcessId,
@@ -352,6 +357,8 @@ export const addLiquidityHandlerFn = async (
     process: luaProcessId,
     signer,
     tags: [
+      { name: "App-Name", value: "Yielder" },
+      { name: "Dex-Name", value: dex },
       { name: "Action", value: "Stake-User-Token" },
       { name: "Pool", value: data.pool },
       { name: "User", value: data.activeWalletAddress },
@@ -359,7 +366,7 @@ export const addLiquidityHandlerFn = async (
       { name: "TokenXQuantity", value: data.tokenA.quantity },
       { name: "TokenYAdrress", value: data.tokenB.token },
       { name: "TokenYQuantity", value: data.tokenB.quantity },
-      { name: "Tx-Source", value: "Yielder" }
+      { name: "Tx-Source", value: "Yielder" },
     ],
   }).then(async (msgId: string) => {
     return await ao.result({
@@ -378,6 +385,10 @@ export const addLiquidityHandlerFn = async (
       process: luaProcessId,
       signer,
       tags: [
+        {
+          name: "App-Name",
+          value: "Yielder"
+        },
         {
           name: "Action",
           value: "calling-tokenx-permaswap"
@@ -410,6 +421,10 @@ export const addLiquidityHandlerFn = async (
       signer,
       tags: [
         {
+          name: "App-Name",
+          value: "Yielder"
+        },
+        {
           name: "Action",
           value: "adding-permaswap-liquidity"
         },
@@ -441,7 +456,7 @@ export async function getUserLpPositions(ao: any, processId: string, walletAddre
   const res = await ao.message({
     process: processId,
     signer: createSigner(window.arweaveWallet),
-    tags: [{ name: "Action", value: "Track-User-Stake" }, { name: "User", value: walletAddress }, { name: "Tx-Source", value: "Yielder" }]
+    tags: [{ name: "Action", value: "Track-User-Stake" }, { name: "User", value: walletAddress }, { name: "Tx-Source", value: "Yielder" }, { name: "App-Name", value: "Yielder" }]
   }).then(async (msgId: string) => {
     const res = await ao.result({
       process: processId,
@@ -512,6 +527,8 @@ export interface burnLiquidityParams {
 export async function removeLiquidity(ao: any, data: burnLiquidityParams, dex: DEX) {
   const signer = createSigner(window.arweaveWallet)
   const tags = [
+    { name: "App-Name", value: "Yielder" },
+    { name: "Dex-Name", value: dex },
     { name: "Action", value: "Burn" },
     { name: "Pool", value: data.pool },
     { name: "User", value: data.userWalletAddress },
