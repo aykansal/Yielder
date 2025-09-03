@@ -1,12 +1,11 @@
 import { LayoutGroup, motion } from "motion/react";
 
 import { TextRotate } from "@/components/ui/text-rotate";
-import { Github } from "lucide-react";
 import { Button } from "./ui/button";
 
 function Preview() {
   return (
-    <div className="w-full h-full text-2xl sm:text-3xl md:text-5xl flex flex-col items-center justify-center font-overusedGrotesk bg-white dark:text-muted text-foreground font-light overflow-hidden p-12 sm:p-20 md:p-24 space-y-8">
+    <div className="relative w-full h-full text-2xl sm:text-3xl md:text-5xl flex flex-col items-center justify-center font-overusedGrotesk bg-white dark:text-muted text-foreground font-light overflow-hidden p-12 sm:p-20 md:p-24 space-y-8">
       <LayoutGroup>
         <motion.div className="flex whitespace-pre text-center" layout>
           <motion.span
@@ -42,7 +41,7 @@ function Preview() {
       </LayoutGroup>
 
       <Button
-      variant="outline"
+        variant="outline"
         className="mt-6 sm:mt-8 md:mt-10 text-base sm:text-lg md:text-xl px-6 py-3 bg-transparent"
         onClick={() => {
           window.location.href = "/#/pools";
@@ -50,6 +49,19 @@ function Preview() {
       >
         Launch App
       </Button>
+      <div className="absolute bottom-8 flex justify-center w-full">
+        <div className="w-6 h-10 border-2 border-border rounded-full flex justify-center items-start p-1 bg-background shadow-sm">
+          <motion.div
+            className="w-1.5 h-1.5 bg-primary rounded-full"
+            animate={{ y: [0, 16, 0], opacity: [1, 0.5, 1] }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

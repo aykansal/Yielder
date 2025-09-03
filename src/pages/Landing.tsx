@@ -17,7 +17,7 @@ const Landing = () => {
     <div className="light min-h-screen bg-background relative">
       <SpinningText
         radius={4.5}
-        className="fixed opacity-30 pointer-events-none md:right-20 md:bottom-20"
+        className="fixed opacity-30 pointer-events-none md:right-20 md:bottom-20 z-50"
       >
         invest • earn • receive •
       </SpinningText>
