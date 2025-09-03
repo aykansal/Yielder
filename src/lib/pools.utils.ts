@@ -11,10 +11,8 @@ const extractSymbolFromName = (name: string, index: 0 | 1): string => {
 
 // Transform best stake data to Pool type
 export const transformBestStakeData = (bestStakeData: any): Pool => {
-    // Extract symbols from the pool name (e.g., "YT2-YT1-30" -> "YT2", "YT1")
-    const nameParts = bestStakeData.name.split('-');
-    const symbolX = nameParts[0] || "Unknown";
-    const symbolY = nameParts[1] || "Unknown";
+    const symbolX  = extractSymbolFromName(bestStakeData.name, 0);
+    const symbolY  = extractSymbolFromName(bestStakeData.name, 1);
 
     return {
         processId: bestStakeData.poolAddress,

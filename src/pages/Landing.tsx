@@ -127,35 +127,23 @@ function Scene() {
   );
 }
 
-export default function LandingHero() {
+export default function Landing() {
   return (
     <div className="relative w-full h-screen bg-black text-white overflow-hidden">
-      <header className="absolute top-0 left-0 right-0 z-10 p-4">
-        <div className="flex justify-center items-center">
-          <span className="text-2xl font-bold">Yielder</span>
-        </div>
-      </header>
       <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-10">
-        <h1 className="text-6xl font-bold mb-8 max-w-4xl mx-auto">
-          Maximize your earnings
-        </h1>
-        <h2 className="text-xl mb-10">
-          
-        </h2>
         <Button
-          variant="ghost"
+          variant="filled"
           onClick={() => {
             window.location.href = "/#/pools";
           }}
-          className="bg-white text-black font-bold py-3 px-6 rounded-md transition duration-300"
+          className="font-bold py-3 px-6 rounded-md transition duration-300"
         >
           Less go
         </Button>
       </div>
-      {/* Non-interactable Canvas */}
       <Canvas
         shadows
-        camera={{ position: [30, 30, 20], fov: 45 }}
+        camera={{ position: [25, 30, 20], fov: 35 }}
         className="absolute inset-0 pointer-events-none"
       >
         <Scene />

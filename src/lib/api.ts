@@ -445,6 +445,23 @@ export async function getUserLpPositions(ao: any, processId: string, walletAddre
 
   // Handle the response - it comes as a JSON string, parse it
   try {
+    if (res !== null) {
+      const data = {
+        processId: "",
+        dex: "",
+        address: "",
+        user_token_x: 0,
+        user_token_y: 0,
+        yielder_lp_token: 0,
+        pool_lp_token: 0,
+        token_x_address: "",
+        token_y_address: "",
+        timestamp: "",
+      }
+
+      return data
+    }
+
     const positionsData = JSON.parse(res);
     const transformedPositions = Object.entries(positionsData || {}).map(
       ([poolAddress, position]: [string, any]) => ({
@@ -465,7 +482,7 @@ export async function getUserLpPositions(ao: any, processId: string, walletAddre
       }),
     );
 
-    return transformedPositions || {};
+    return transformedPositions;
   } catch (error) {
     console.warn('Error parsing user LP positions response:', error);
     return {};

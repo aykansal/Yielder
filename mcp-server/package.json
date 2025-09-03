@@ -1,29 +1,49 @@
 {
-  "name": "mcp-server",
+  "name": "dex-mcp",
   "version": "1.0.0",
-  "description": "MCP Server for DEX Pool Data",
+  "description": "Model Context Protocol server for accessing DEX pool data from Permaswap and Botega on AO network",
   "main": "dist/index.js",
+  "bin": {
+    "dex-mcp": "./dist/index.js"
+  },
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "dex",
     "pools",
     "permaswap",
-    "botega"
+    "botega",
+    "ao",
+    "arweave",
+    "yield-farming",
+    "liquidity-pools"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "aykansal",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aykansal/yielder.git",
+    "directory": "mcp"
+  },
+  "homepage": "https://github.com/aykansal/yielder/tree/main/mcp#readme",
+  "bugs": {
+    "url": "https://github.com/aykansal/yielder/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.4",
     "@permaweb/aoconnect": "^0.0.90",
-    "arweave": "^1.15.7",
-    "dotenv": "^17.2.1"
+    "arweave": "^1.15.7"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

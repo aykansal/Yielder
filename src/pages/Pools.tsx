@@ -78,31 +78,91 @@ export default function Pools() {
   useEffect(() => {
     document.title = "Liquidity Pools · Yielder";
   }, []);
-  // Enhanced refresh function with error handling
-  const refreshPools = React.useCallback(async (isBackgroundUpdate = false) => {
-    setError(null);
-    try {
-      if (!isBackgroundUpdate) {
-        setLoading(true);
-      } else {
-        setUpdating(true);
-      }
-
-      const allPools = await getAllPools(ao);
-
-      setPools(allPools);
-      console.log("[pools.tsx] Loaded pools:", allPools.length, "pools");
-    } catch (err) {
-      setError("Failed to load pools. Please try again.");
-      console.error("Pool refresh error:", err);
-    } finally {
-      if (!isBackgroundUpdate) {
-        setLoading(false);
-      } else {
-        setUpdating(false);
+  // Load pools from localStorage on mount
+  React.useEffect(() => {
+    const cachedPools = localStorage.getItem("pools-cache");
+    if (cachedPools) {
+      try {
+        const parsedPools = JSON.parse(cachedPools);
+        setPools(parsedPools);
+        console.log("[pools.tsx] Loaded cached pools:", parsedPools.length);
+      } catch (err) {
+        console.error("Failed to parse cached pools:", err);
+        localStorage.removeItem("pools-cache");
       }
     }
   }, []);
+
+  // Save pools to localStorage
+  const savePoolsToCache = React.useCallback((poolsToCache: Pool[]) => {
+    try {
+      localStorage.setItem("pools-cache", JSON.stringify(poolsToCache));
+    } catch (err) {
+      console.error("Failed to save pools to cache:", err);
+    }
+  }, []);
+
+  // Merge new pools with existing pools
+  const mergePools = React.useCallback(
+    (existingPools: Pool[], newPools: Pool[]): Pool[] => {
+      const poolsMap = new Map<string, Pool>();
+
+      // Add existing pools to map
+      existingPools.forEach((pool) => {
+        poolsMap.set(pool.processId, pool);
+      });
+
+      // Update/add new pools
+      newPools.forEach((pool) => {
+        poolsMap.set(pool.processId, pool);
+      });
+
+      // Convert back to array
+      const mergedPools = Array.from(poolsMap.values());
+
+      console.log(
+        `[pools.tsx] Merged pools: ${existingPools.length} existing + ${newPools.length} new = ${mergedPools.length} total`,
+      );
+
+      return mergedPools;
+    },
+    [],
+  );
+
+  // Enhanced refresh function with error handling and merge logic
+  const refreshPools = React.useCallback(
+    async (isBackgroundUpdate = false) => {
+      setError(null);
+      try {
+        if (!isBackgroundUpdate) {
+          setLoading(true);
+        } else {
+          setUpdating(true);
+        }
+
+        const allPools = await getAllPools(ao);
+
+        setPools((currentPools) => {
+          const mergedPools = mergePools(currentPools, allPools);
+          // Save merged pools to cache
+          savePoolsToCache(mergedPools);
+          return mergedPools;
+        });
+
+        console.log("[pools.tsx] Refreshed pools:", allPools.length, "pools");
+      } catch (err) {
+        setError("Failed to load pools. Please try again.");
+        console.error("Pool refresh error:", err);
+      } finally {
+        if (!isBackgroundUpdate) {
+          setLoading(false);
+        } else {
+          setUpdating(false);
+        }
+      }
+    },
+    [mergePools, savePoolsToCache],
+  );
 
   // Load available tokens for Best Stake
   const loadTokens = React.useCallback(async () => {
@@ -156,7 +216,6 @@ export default function Pools() {
         selectedTokenX,
         selectedTokenY,
       );
-
       console.log("[pools.tsx] bestStakeData:", bestStakeData);
       if (bestStakeData) {
         const transformedBestStakePool = transformBestStakeData(bestStakeData);
