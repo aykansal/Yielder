@@ -154,7 +154,19 @@ export async function getTokenList(): Promise<Token[]> {
     }
 
     const tokens: Token[] = await response.json();
-    return tokens;
+
+    // Filter to only include specific YT tokens
+    const allowedProcessIds = [
+      '_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU',
+      'Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc',
+      'CgD7STeX0_VDlNwNnB4_qQLg4nb4okqXQgTki0sFXSM'
+    ];
+
+    const filteredTokens = tokens.filter(token =>
+      allowedProcessIds.includes(token.process)
+    );
+
+    return filteredTokens;
   } catch (error) {
     console.error('Error fetching token list:', error);
     throw error;

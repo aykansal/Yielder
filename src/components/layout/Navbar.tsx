@@ -1,6 +1,6 @@
 import { Link, NavLink } from "react-router";
 import { shortenAddress } from "@/lib/helpers.utils";
-import { ExternalLink, LogOut, Menu } from "lucide-react";
+import { ExternalLink, Github, LogOut, Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth, useWalletActions } from "@/hooks/use-global-state";
 import { Button } from "@/components/ui/button";
@@ -86,6 +86,14 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <Github
+            onClick={() => {
+              window.open(
+                "https://github.com/AAshu1412/Yielder",
+                "_blank",
+              );
+            }}
+          />
           <ThemeToggle />
           <WalletSection
             isAuthenticated={isAuthenticated}

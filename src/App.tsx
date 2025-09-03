@@ -145,27 +145,39 @@ const App = () => (
           <Sonner />
           <HashRouter>
             <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/pools" element={
-                <AppShell>
-                  <Pools />
-                </AppShell>
-              } />
-              <Route path="/liquidity" element={
-                <AppShell>
-                  <LiquidityPage />
-                </AppShell>
-              } />
-              <Route path="/dashboard" element={
-                <AppShell>
-                  <Dashboard />
-                </AppShell>
-              } />
-              <Route path="*" element={
-                <AppShell>
-                  <NotFound />
-                </AppShell>
-              } />
+              <Route path="/" element={<Navigate to="/pools" replace />} />
+              <Route
+                path="/pools"
+                element={
+                  <AppShell>
+                    <Pools />
+                  </AppShell>
+                }
+              />
+              <Route
+                path="/liquidity"
+                element={
+                  <AppShell>
+                    <LiquidityPage />
+                  </AppShell>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <AppShell>
+                    <Dashboard />
+                  </AppShell>
+                }
+              />
+              <Route
+                path="*"
+                element={
+                  <AppShell>
+                    <NotFound />
+                  </AppShell>
+                }
+              />
             </Routes>
           </HashRouter>
         </TooltipProvider>

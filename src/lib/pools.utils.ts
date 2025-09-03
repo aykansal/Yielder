@@ -49,12 +49,12 @@ const transformPoolData = (apiData: PoolAPIResponse): Pool[] => {
                 processId,
                 dex: DEX.PERMASWAP,
                 tokenA: {
-                    symbol: poolData.symbolX || "Unknown",
+                    symbol: poolData.symbolX || "",
                     address: poolData.tokenA,
                     decimals: parseInt(poolData.denomination) || 12,
                 },
                 tokenB: {
-                    symbol: poolData.symbolY || "Unknown",
+                    symbol: poolData.symbolY || "",
                     address: poolData.tokenB,
                     decimals: parseInt(poolData.denomination) || 12,
                 },
