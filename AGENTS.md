@@ -1,173 +1,137 @@
-A production-ready full-stack React application template with integrated Express server, featuring React Router 6 SPA mode, TypeScript, Vitest, Zod and modern tooling.
+# Yielder Protocol: An Autonomous Cross-DEX Yield Aggregator on ao
 
-While the starter comes with a express server, only create endpoint when strictly neccesary, for example to encapsulate logic that must leave in the server, such as private keys handling, or certain DB operations, db...
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![Platform: ao Computer](https://img.shields.io/badge/Platform-ao%20Computer-green.svg)
+![Language: Lua](https://img.shields.io/badge/Language-Lua-purple.svg)
 
-## Tech Stack
+**Yielder** is a autonomous yield aggregation and liquidity management protocol built on the AO. It is engineered to abstract away the complexity of liquidity provision, enabling users to effortlessly maximize their returns across a fragmented DeFi ecosystem.
 
-- **PNPM**: Prefer pnpm
-- **Frontend**: React 18 + React Router 6 (spa) + TypeScript + Vite + TailwindCSS 3
-- **Backend**: Express server integrated with Vite dev server
-- **Testing**: Vitest
-- **UI**: Radix UI + TailwindCSS 3 + Lucide React icons
+**Website:** `(Link to your website here)`
 
-## Project Structure
+---
 
-```
-client/                   # React SPA frontend
-├── pages/                # Route components (Index.tsx = home)
-├── components/ui/        # Pre-built UI component library
-├── App.tsx                # App entry point and with SPA routing setup
-└── global.css            # TailwindCSS 3 theming and global styles
+## Table of Contents
 
-server/                   # Express API backend
-├── index.ts              # Main server setup (express config + routes)
-└── routes/               # API handlers
+- [Abstract](#abstract)
+- [How It Works](#how-it-works)
+- [Protocol Architecture](#protocol-architecture)
+  - [Key Processes & Assets](#key-processes--assets)
+  - [Integrated Liquidity Pools](#integrated-liquidity-pools)
+- [User Workflow](#user-workflow)
+- [Core Handlers (API Reference)](#core-handlers-api-reference)
+  - [Data & Analysis](#data--analysis)
+  - [Staking & Liquidity](#staking--liquidity)
+  - [Utility Handlers](#utility-handlers)
+- [Development & Setup](#development--setup)
 
-shared/                   # Types used by both client & server
-└── api.ts                # Example of how to share api interfaces
-```
+---
 
-## Key Features
+## Abstract
 
-## SPA Routing System
+Yielder solves three primary challenges for liquidity providers: the need for constant market monitoring, the high cost of frequent transactions, and the complexity of managing fragmented liquidity positions. By algorithmically analyzing performance metrics like APR, TVL and Swap Fees, Yielder automatically deploys and dynamically rebalances user assets into the most profitable liquidity pools across integrated DEXs **Permaswap** and **Botega**. The entire user position is represented by a single, liquid derivative token (`YLP - Yielder LP Token`), simplifying portfolio management and socializing transaction costs for ultimate capital efficiency.
 
-The routing system is powered by React Router 6:
+---
 
-- `client/pages/Index.tsx` represents the home page.
-- Routes are defined in `client/App.tsx` using the `react-router` import
-- Route files are located in the `client/pages/` directory
+## How It Works
 
-For example, routes can be defined with:
+The Yielder protocol operates as a smart, autonomous agent for liquidity providers. It automates the entire yield farming lifecycle—from discovery and analysis to execution and optimization—ensuring user capital is perpetually working in the most productive pools without requiring any active management.
 
-```typescript
-import { BrowserRouter, Routes, Route } from "react-router";
+### Yielder Protocol Workflow
 
-<Routes>
-  <Route path="/" element={<Index />} />
-  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-  <Route path="*" element={<NotFound />} />
-</Routes>;
-```
+![Yielder Workflow](./processes/yirlder.png)
+---
 
-### Styling System
+## Protocol Architecture
 
-- **Primary**: TailwindCSS 3 utility classes
-- **Theme and design tokens**: Configure in `client/global.css`
-- **UI components**: Pre-built library in `client/components/ui/`
-- **Utility**: `cn()` function combines `clsx` + `tailwind-merge` for conditional classes
+The Yielder ecosystem is comprised of several core components that work in synergy.
 
-```typescript
-// cn utility usage
-className={cn(
-  "base-classes",
-  { "conditional-class": condition },
-  props.className  // User overrides
-)}
-```
+### Key Processes & Assets
 
-### Express Server Integration
+* **Main Yielder Process:** The central smart contract that contains all the protocol's logic. It serves as the user-facing vault, the analytics engine, and the execution layer for all staking and rebalancing operations.
+    * **Process ID:** `SpJdYt1_CdMG0W5JjDVYfu-tJNGB2bXC6usBSyrQAys`
+* **Yielder Token Suite (YTs):** A set of proprietary utility and liquidity tokens that form the foundation of the Yielder ecosystem.
+    * **YT1:** `_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU`
+    * **YT2:** `Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc`
+    * **YT3:** `CgD7STeX0_VDlNwNnB4_qQLg4nb4okqXQgTki0sFXSM`
+* **Yielder LP Token (YLP):** The protocol's native derivative LP token. When users deposit assets, Yielder mints and distributes `YLP` as a liquid receipt representing their share of the total assets managed by the protocol.
 
-- **Development**: Single port (8080) for both frontend/backend
-- **Hot reload**: Both client and server code
-- **API endpoints**: Prefixed with `/api/`
+### Integrated Liquidity Pools
 
-#### Example API Routes
+Yielder is integrated with and actively monitors the following liquidity pools across two major DEXs:
 
-- `GET /api/ping` - Simple ping api
-- `GET /api/demo` - Demo endpoint
+* **Permaswap Pools:**
+    * **YT1 & YT2 Pool:** `3TFMtVjYssqCuNPIqcIKn-tM4bWq5KtQ9NKweWxvV1w`
+    * **YT2 & YT3 Pool:** `7YDBq2EZYQk8o_5Lbm6HcxIYqjWcr65ShmKBHH4XqRU`
+    * **YT1 & YT3 Pool:** `bmR1GHhqKJa9MrQe9g8gC8OrNcitWyFRuVKADIKNXc8`
+* **Botega/DEXI Pools:**
+    * **YT1 & YT2 Pool:** `Q9uyLNaNvuFHvNrQQZ_XuOrRZ6OEE0KqSEPJJj8Z4Ys`
+    * **YT2 & YT3 Pool:** `76IKbymu5DvaYaZcbMvEJg_WI9LNzZgzv3vcFmgES2M`
+    * **YT1 & YT3 Pool:** `w5UW-qIme4BWojTRQBqFRsweuzWzA-Hy9KExmJM5DMg`
 
-### Shared Types
+---
 
-Import consistent types in both client and server:
+## User Workflow
 
-```typescript
-import { DemoResponse } from "@shared/api";
-```
+1.  **Deposit:** A user sends their base tokens (e.g., YT1 and YT2) to the main Yielder Process.
+2.  **Analyze & Stake:** The user calls the `Stake-User-Token` handler. The Yielder process uses its internal analytics to confirm the best pool and automatically stakes the user's tokens into it.
+3.  **Receive YLP:** Yielder mints and sends its native `YLP` tokens back to the user as a receipt for their stake.
+4.  **Earn Yield:** The user's assets are now earning fees in the underlying pool. The `cron` and `Auto-Yield-Optimizer` handlers work in the background to ensure the assets are always in the most profitable position.
+5.  **Withdraw:** The user calls the `burn` handler, sending their `YLP` tokens. Yielder redeems the underlying assets from the DEX pool and transfers them back to the user.
 
-Path aliases:
+---
 
-- `@shared/*` - Shared folder
-- `@/*` - Client folder
+## Core Handlers (API Reference)
 
-## Development Commands
+The Yielder protocol is controlled by sending messages with specific `Action` tags to the main process.
 
-```bash
-pnpm dev        # Start dev server (client + server)
-pnpm build      # Production build
-pnpm start      # Start production server
-pnpm typecheck  # TypeScript validation
-pnpm test          # Run Vitest tests
-```
+### Data & Analysis
 
-## Adding Features
+* `Best-Stake`: Analyzes all relevant pools for a given token pair and returns the one with the optimal yield, considering both APR and TVL.
+    * **Tags:** `TokenX`, `TokenY`
+* `cron`: A system-level handler (triggered by a cron service) that periodically fetches data for *all* pools, calculates their APRs, and stores the results in `CRONDATAPOOL` for the optimization engine.
+* `Auto-Yield-Optimizer`: A powerful handler that iterates through all user stake positions, compares their current pool's APR to the best available APR, and automatically triggers a rebalancing if a significantly better opportunity is found.
 
-### Add new colors to the theme
+### Staking & Liquidity
 
-Open `client/global.css` and `tailwind.config.ts` and add new tailwind colors.
+* `Credit-Notice`: The primary handler for receiving user token deposits. It updates the user's internal balance within the protocol.
+* `Stake-User-Token`: The main function for a user to stake their deposited tokens. It calculates `MinLiquidity`, transfers tokens, and calls `AddLiquidity` on the target DEX pool.
+* `burn`: The handler for withdrawing liquidity. The user sends their `YLP` tokens, and this function triggers the `remove_liquidity` process on the underlying DEX pool.
 
-### New API Route
+### Utility Handlers
 
-1. **Optional**: Create a shared interface in `shared/api.ts`:
+* `YT1Airdrop`, `YT2Airdrop`, `YT3Airdrop`: Utility functions for developers and users to easily acquire the base tokens for testing and participation.
 
-```typescript
-export interface MyRouteResponse {
-  message: string;
-  // Add other response properties here
-}
-```
+---
 
-2. Create a new route handler in `server/routes/my-route.ts`:
+## Development & Setup
 
-```typescript
-import { RequestHandler } from "express";
-import { MyRouteResponse } from "@shared/api"; // Optional: for type safety
+This process is built with Lua for the `ao` Computer. To interact with it, you can use `aos` or any `ao`-compatible SDK.
 
-export const handleMyRoute: RequestHandler = (req, res) => {
-  const response: MyRouteResponse = {
-    message: "Hello from my endpoint!",
-  };
-  res.json(response);
-};
+**Example: Finding the best pool for YT1 and YT2**
+```lua
+Send({
+  Target = "SpJdYt1_CdMG0W5JjDVYfu-tJNGB2bXC6usBSyrQAys",
+  Action = "Best-Stake",
+  Tags = {
+    TokenX = "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU",
+    TokenY = "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc"
+  }
+})
 ```
 
-3. Register the route in `server/index.ts`:
-
-```typescript
-import { handleMyRoute } from "./routes/my-route";
-
-// Add to the createServer function:
-app.get("/api/my-endpoint", handleMyRoute);
+**Example: Staking tokens**
+```lua
+-- (Assumes user has already deposited YT1 and YT2 into the Yielder process)
+Send({
+  Target = "SpJdYt1_CdMG0W5JjDVYfu-tJNGB2bXC6usBSyrQAys",
+  Action = "Stake-User-Token",
+  Tags = {
+    User = "YOUR_USER_ADDRESS",
+    PoolAddress = "3TFMtVjYssqCuNPIqcIKn-tM4bWq5KtQ9NKweWxvV1w", -- Target pool
+    TokenXAddress = "_IxG5qxfgSBBj1wH7BL0j1vkihOcfx2ntXS19NZjDFU",
+    TokenXQuantity = "100000000000000", -- 100 YT1 in smallest units
+    TokenYAddress = "Zg8ihIkD2Tpm2E0vRbJSD0J3Jb3dqK8XUZ4OlOZ9kcc",
+    TokenYQuantity = "115384615384600"  -- 115.38 YT2 in smallest units
+  }
+})
 ```
-
-4. Use in React components with type safety:
-
-```typescript
-import { MyRouteResponse } from "@shared/api"; // Optional: for type safety
-
-const response = await fetch("/api/my-endpoint");
-const data: MyRouteResponse = await response.json();
-```
-
-### New Page Route
-
-1. Create component in `client/pages/MyPage.tsx`
-2. Add route in `client/App.tsx`:
-
-```typescript
-<Route path="/my-page" element={<MyPage />} />
-```
-
-## Production Deployment
-
-- **Standard**: `pnpm build`
-- **Binary**: Self-contained executables (Linux, macOS, Windows)
-- **Cloud Deployment**: Use either Netlify or Vercel via their MCP integrations for easy deployment. Both providers work well with this starter template.
-
-## Architecture Notes
-
-- Single-port development with Vite + Express integration
-- TypeScript throughout (client, server, shared)
-- Full hot reload for rapid development
-- Production-ready with multiple deployment options
-- Comprehensive UI component library included
-- Type-safe API communication via shared interfaces
