@@ -8,7 +8,7 @@ function Preview() {
   return (
     <div className="w-full h-full text-2xl sm:text-3xl md:text-5xl flex flex-col items-center justify-center font-overusedGrotesk bg-white dark:text-muted text-foreground font-light overflow-hidden p-12 sm:p-20 md:p-24 space-y-8">
       <LayoutGroup>
-        <motion.p className="flex whitespace-pre text-center" layout>
+        <motion.div className="flex whitespace-pre text-center" layout>
           <motion.span
             className="pt-0.5 sm:pt-1 md:pt-2"
             layout
@@ -38,11 +38,12 @@ function Preview() {
             transition={{ type: "spring", damping: 30, stiffness: 400 }}
             rotationInterval={2000}
           />
-        </motion.p>
+        </motion.div>
       </LayoutGroup>
 
       <Button
-        className="mt-6 sm:mt-8 md:mt-10 text-base sm:text-lg md:text-xl px-6 py-3"
+      variant="outline"
+        className="mt-6 sm:mt-8 md:mt-10 text-base sm:text-lg md:text-xl px-6 py-3 bg-transparent"
         onClick={() => {
           window.location.href = "/#/pools";
         }}

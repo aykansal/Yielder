@@ -2,9 +2,17 @@ import { FeaturesSectionWithHoverEffects } from "@/components/feature-section-wi
 import { SpinningText } from "@/components/magicui/spinning-text";
 import TeamSection from "@/components/team";
 import { Preview as TextRotateDemo } from "@/components/TextRotateDemo";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Github } from "lucide-react";
+import { useEffect } from "react";
 
 const Landing = () => {
+  const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    if (theme != "light") setTheme("light");
+  }, []);
+
   return (
     <div className="light min-h-screen bg-background relative">
       <SpinningText

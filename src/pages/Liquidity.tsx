@@ -1092,8 +1092,7 @@ export function LiquidityComponent({
                           <div className="px-4 pb-2 pt-2 sm:px-6">
                             {!isTransferring ? (
                               <p className="text-sm text-neutral-600">
-                                Review the details above and confirm to start
-                                the transfer sequence.
+                                {/* Review the details above and confirm to start the transfer sequence. */}
                               </p>
                             ) : (
                               // Processing timeline
@@ -1260,8 +1259,8 @@ export function LiquidityComponent({
               className="space-y-4"
             >
               {/* Percentage slider */}
-              <div className="rounded-[16px] border bg-green-50 p-5 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
-                <div className="mb-2 text-3xl font-bold text-green-600 dark:text-green-400">
+              <div className="rounded-[16px] border p-5 shadow-[0_4px_16px_rgba(0,0,0,0.05)]">
+                <div className="mb-2 text-3xl font-bold text-foreground">
                   {percent[0]}%
                 </div>
                 <Slider
@@ -1275,7 +1274,7 @@ export function LiquidityComponent({
                   {[0, 25, 50, 75, 100].map((t) => (
                     <button
                       key={t}
-                      className="rounded-full bg-card/70 px-2 py-0.5 text-green-600 dark:text-green-400 shadow-xs transition-colors hover:bg-card"
+                      className="rounded-full bg-card/70 px-2 py-0.5 shadow-xs transition-colors hover:bg-primary/50"
                       onClick={() => setPercent([t])}
                     >
                       {t}%

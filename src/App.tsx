@@ -30,9 +30,9 @@ const ThemedArweaveWalletKit = ({
   // Get computed theme (resolves "system" to actual theme)
   const computedTheme = useMemo(() => {
     if (theme === "system") {
-      return window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
+      return window.matchMedia("(prefers-color-scheme: light)").matches
+        ? "light"
+        : "dark";
     }
     return theme;
   }, [theme]);
