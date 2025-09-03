@@ -6,7 +6,7 @@ import { Github } from "lucide-react";
 
 const Landing = () => {
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="light min-h-screen bg-background relative">
       <SpinningText
         radius={4.5}
         className="fixed opacity-30 pointer-events-none md:right-20 md:bottom-20"

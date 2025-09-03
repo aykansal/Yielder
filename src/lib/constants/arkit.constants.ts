@@ -4,7 +4,7 @@ import type { Tag } from "../arkit";
 export const PROTOCOL_TYPE = "https";
 export const HOST_NAME = "arweave.net";
 export const PORT_NUM = 443;
-export const CU_URL = "https://cu.ao-testnet.xyz";
+export const CU_URL = "https://cu.ardrive.io";
 export const MODE = "legacy";
 
 export const GOLD_SKY_GQL = "https://arweave-search.goldsky.com/graphql";
