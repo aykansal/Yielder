@@ -31,7 +31,7 @@ export function FeaturesSectionWithHoverEffects() {
       icon: <IconDatabase />,
     },
     {
-      title: "Track your gains",
+      title: "Track with MCP",
       description:
         "See how your pools are doing in real time without opening five tabs.",
       icon: <IconChartLine />,
@@ -45,7 +45,7 @@ export function FeaturesSectionWithHoverEffects() {
     {
       title: "Know your risks",
       description:
-        "Each pool comes with a simple vibe check — chill, balanced, or spicy.",
+        "Each pool comes with a simple vibe check - chill, balanced, or spicy.",
       icon: <IconGauge />,
     },
     {
