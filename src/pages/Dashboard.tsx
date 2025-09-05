@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/use-global-state";
 import { DEX } from "@/types/pool.types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw } from "lucide-react";
+import { getStoredPositions, storePositions } from "@/lib/utils";
 
 export interface PositionData {
   processId: string;
@@ -40,37 +41,57 @@ export default function Dashboard() {
   const [positions, setPositions] = useState<PositionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const mergePositions = (
+    oldPositions: PositionData[],
+    newPositions: PositionData[],
+  ): PositionData[] => {
+    const updatedMap = new Map<string, PositionData>();
+
+    // put old positions first
+    oldPositions.forEach((p) => updatedMap.set(p.processId, p));
+
+    // overwrite with fresh data
+    newPositions.forEach((p) => updatedMap.set(p.processId, p));
+
+    return Array.from(updatedMap.values());
+  };
+
   const handleFetchUserLpPositions = async () => {
     try {
-      setIsLoading(true);
-      const transformedPositions = await getUserLpPositions(
+      const freshPositions = await getUserLpPositions(
         ao,
         luaProcessId,
         wallet?.address,
       );
-      setPositions(
-        Array.isArray(transformedPositions) ? transformedPositions : [],
-      );
+
+      const safeFresh = Array.isArray(freshPositions) ? freshPositions : [];
+
+      setPositions((prev) => {
+        const merged = mergePositions(prev, safeFresh);
+        storePositions(merged);
+        return merged;
+      });
     } catch (error) {
       console.error("Error fetching user LP positions:", error);
-      setPositions([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    const cached = getStoredPositions();
+    if (cached.length > 0) {
+      setPositions(cached);
+      setIsLoading(false); 
+    }
+  }, []);
+
+  useEffect(() => {
     if (!wallet?.address) return;
-
-    // fetch immediately on mount
     handleFetchUserLpPositions();
-
-    // set interval for polling every 5 seconds
     const interval = setInterval(() => {
       handleFetchUserLpPositions();
     }, 5000);
-
-    // cleanup on unmount
     return () => clearInterval(interval);
   }, [wallet?.address]);
 

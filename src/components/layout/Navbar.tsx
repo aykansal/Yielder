@@ -84,24 +84,28 @@ export function Navbar() {
               )}
             </NavLink>
           )}
-          <NavLink
-            key={tabs[2].to}
-            to={tabs[2].to}
-            className={({ isActive }) =>
-              `relative text-sm font-medium text-foreground/80 hover:text-foreground transition-colors ${isActive ? "text-foreground" : ""}`
-            }
-          >
-            {({ isActive }) => (
-              <span className="inline-flex flex-col items-center">
-                <span>{tabs[2].label}</span>
-                <span
-                  className={`mt-1 h-0.5 w-8 rounded-full transition-all ${
-                    isActive ? "bg-[hsl(var(--primary-700))]" : "bg-transparent"
-                  }`}
-                />
-              </span>
-            )}
-          </NavLink>
+          {isAuthenticated && (
+            <NavLink
+              key={tabs[2].to}
+              to={tabs[2].to}
+              className={({ isActive }) =>
+                `relative text-sm font-medium text-foreground/80 hover:text-foreground transition-colors ${isActive ? "text-foreground" : ""}`
+              }
+            >
+              {({ isActive }) => (
+                <span className="inline-flex flex-col items-center">
+                  <span>{tabs[2].label}</span>
+                  <span
+                    className={`mt-1 h-0.5 w-8 rounded-full transition-all ${
+                      isActive
+                        ? "bg-[hsl(var(--primary-700))]"
+                        : "bg-transparent"
+                    }`}
+                  />
+                </span>
+              )}
+            </NavLink>
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
