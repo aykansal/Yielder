@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "dex-pools": {
+      "command": "node",
+      "args": ["C:\\Users\\ayver\\Desktop\\mcp-server\\dist\\index.js"]
+    }
+  }
+}
+

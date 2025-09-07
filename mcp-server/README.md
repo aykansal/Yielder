@@ -45,7 +45,7 @@ Add the following to your `claude_desktop_config.json`:
   "mcpServers": {
     "dex-pools": {
       "command": "node",
-      "args": ["dex-mcp"]
+      "args": ["/path/to/your/mcp-server/dist/index.js"]
     }
   }
 }
@@ -60,7 +60,7 @@ Add to your Cursor MCP configuration:
   "mcpServers": {
     "dex-pools": {
       "command": "node",
-      "args": ["dex-mcp"]
+      "args": ["/path/to/your/mcp-server/dist/index.js"]
     }
   }
 }
@@ -95,7 +95,7 @@ Once integrated with an MCP client, you can ask questions like:
 
 ## Data Source
 
-This server fetches data from the AO process `SpJdYt1_CdMG0W5JjDVYfu-tJNGB2bXC6usBSyrQAys` using the `@permaweb/aoconnect` library.
+This server fetches data from the AO process `Pqho57bR_l8HHlf-2fAMYzvb1o73EP8RAPapGsv3aKA` using the `@permaweb/aoconnect` library.
 
 ## Development
 
@@ -119,6 +119,7 @@ npm run build
 - `npm run build` - Compile TypeScript to JavaScript
 - `npm start` - Run the compiled server
 - `npm run dev` - Run in development mode with tsx
+- `npm run inspect` - Test tools in MCP Inspect GUI
 
 ## Dependencies
 
