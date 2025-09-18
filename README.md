@@ -2,11 +2,22 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Platform: ao Computer](https://img.shields.io/badge/Platform-ao%20Computer-green.svg)
-![Language: Lua](https://img.shields.io/badge/Language-Lua-purple.svg)
+![Language: Lua](https://img.shields.io/badge/Language-Lua-purple.svg?logo=lua)
+![React](https://img.shields.io/badge/React-343434.svg?logo=react)
+![Vite](https://img.shields.io/badge/Vite-343434.svg?logo=vite)
+![Shadcn ui](https://img.shields.io/badge/Shadcn-343434.svg?logo=shadcnui)
 
 **Yielder** is an autonomous yield aggregator on the `ao` computer that automatically finds and stakes your assets in the most profitable liquidity pools across multiple DEXs, ensuring you always get the best returns with minimal effort.
 
-**Website:** [`https://yielder_aykansal.ar.io/`](https://yielder_aykansal.ar.io/)
+**Website:** [`https://yielder_aykansal.ar.io`](https://arweave.net/MG9Y7l4yqqumclkLhW9hRoDlbQo0wzSubHprhKQlV7M)
+
+---
+## 🏆 Hackathon Win & Early Traction
+- Won the **Bonus Track** at [Arweave/AO Agents Hackathon] : [Winning Tweet](https://x.com/aoTheComputer/status/1964009442157953513)  
+![Winning Post](https://raw.githubusercontent.com/aykansal/Yielder/main/public/x-winner-yielder.png)  
+
+- Shared the launch on X and got some early traction + feedback : [Launch Tweet](https://x.com/aykansal/status/1963407426952233382)
+![Launch Post - Vertical](https://raw.githubusercontent.com/aykansal/Yielder/main/public/x-launch-yielder.png)  
 
 ---
 
